@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solo ADU 3D Configurator — Bay Modular</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#F8F5EF;color:#1A1A18;}
+.app{display:flex;flex-direction:column;height:100vh;min-height:600px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0.7rem 1.25rem;background:#fff;border-bottom:1px solid rgba(26,26,24,0.1);flex-shrink:0;}
+.tb-brand{font-family:'DM Serif Display',serif;font-size:0.95rem;color:#1A1A18;}
+.tb-brand span{color:#1D9E75;}
+.tb-price{text-align:center;}
+.tp-lbl{font-size:0.62rem;color:#6B6B65;letter-spacing:0.07em;text-transform:uppercase;}
+.tp-val{font-family:'DM Serif Display',serif;font-size:1.3rem;color:#085041;line-height:1;}
+.tp-note{font-size:0.6rem;color:#6B6B65;}
+.tb-btn{padding:0.5rem 1.1rem;background:#1D9E75;color:#fff;border:none;border-radius:2px;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;cursor:pointer;}
+.tb-btn:hover{background:#0F6E56;}
+.main{display:flex;flex:1;overflow:hidden;}
+/* CANVAS SIDE */
+.canvas-side{flex:1;display:flex;flex-direction:column;background:#EAE6DC;min-width:0;}
+.vtabs{display:flex;background:rgba(248,245,239,0.95);border-bottom:1px solid rgba(26,26,24,0.1);}
+.vtab{padding:0.55rem 1rem;font-size:0.75rem;font-weight:500;color:#6B6B65;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.18s;}
+.vtab.on{color:#1D9E75;border-bottom-color:#1D9E75;}
+.cview{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+canvas{max-width:100%;max-height:100%;}
+.corner-btns{position:absolute;bottom:0.75rem;right:0.75rem;display:flex;gap:0.35rem;}
+.cbtn{width:30px;height:30px;background:rgba(248,245,239,0.92);border:1px solid rgba(26,26,24,0.12);border-radius:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem;}
+.cbtn:hover{background:#E1F5EE;border-color:#1D9E75;}
+.drag-hint{position:absolute;top:0.6rem;left:50%;transform:translateX(-50%);font-size:0.7rem;color:rgba(26,26,24,0.4);pointer-events:none;white-space:nowrap;}
+/* PANEL */
+.panel{width:280px;flex-shrink:0;background:#fff;border-left:1px solid rgba(26,26,24,0.1);overflow-y:auto;display:flex;flex-direction:column;}
+.psec{padding:1rem;border-bottom:1px solid rgba(26,26,24,0.08);}
+.ptitle{font-size:0.63rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#6B6B65;margin-bottom:0.7rem;}
+/* models */
+.mopts{display:flex;flex-direction:column;gap:0.3rem;}
+.mopt{display:flex;justify-content:space-between;align-items:center;padding:0.55rem 0.8rem;border:1px solid rgba(26,26,24,0.1);border-radius:2px;cursor:pointer;background:#F8F5EF;transition:all 0.15s;}
+.mopt:hover{border-color:#1D9E75;}
+.mopt.on{border-color:#1D9E75;background:#E1F5EE;}
+.mn{font-size:0.82rem;font-weight:500;}
+.ms{font-size:0.67rem;color:#6B6B65;margin-top:1px;}
+.mp{font-size:0.73rem;font-weight:500;color:#085041;}
+/* swatches */
+.flbl{font-size:0.67rem;color:#6B6B65;margin-bottom:0.3rem;margin-top:0.55rem;}
+.sws{display:flex;gap:0.3rem;flex-wrap:wrap;}
+.sw{width:22px;height:22px;border-radius:2px;cursor:pointer;border:2px solid transparent;transition:all 0.12s;flex-shrink:0;}
+.sw:hover{transform:scale(1.18);}
+.sw.on{border-color:#1A1A18;box-shadow:0 0 0 1px #F8F5EF;}
+/* toggles */
+.ftog{display:flex;align-items:center;padding:0.38rem 0;}
+.ftog label{font-size:0.78rem;color:#3D3D39;flex:1;cursor:pointer;}
+.fpr{font-size:0.67rem;color:#0F6E56;margin-right:0.55rem;}
+.tgl{width:30px;height:17px;background:rgba(26,26,24,0.12);border-radius:8px;position:relative;cursor:pointer;transition:background 0.18s;flex-shrink:0;}
+.tgl.on{background:#1D9E75;}
+.tgl::after{content:'';position:absolute;width:11px;height:11px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left 0.18s;}
+.tgl.on::after{left:16px;}
+/* summary */
+.sum{padding:1rem;margin-top:auto;flex-shrink:0;border-top:1px solid rgba(26,26,24,0.08);}
+.si{display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:0.3rem;}
+.sl{color:#6B6B65;}.sv{font-weight:500;}
+.sdiv{height:1px;background:rgba(26,26,24,0.08);margin:0.4rem 0;}
+.strow{display:flex;justify-content:space-between;align-items:baseline;}
+.stl{font-weight:500;font-size:0.88rem;}
+.stv{font-family:'DM Serif Display',serif;font-size:1rem;color:#085041;}
+.qbtn{width:100%;padding:0.75rem;background:#1D9E75;color:#fff;border:none;border-radius:2px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:500;cursor:pointer;margin-top:0.75rem;transition:background 0.18s;}
+.qbtn:hover{background:#0F6E56;}
+/* modal */
+.mbg{display:none;position:fixed;inset:0;background:rgba(26,26,24,0.55);z-index:50;align-items:center;justify-content:center;}
+.mbg.show{display:flex;}
+.modal{background:#fff;border-radius:4px;padding:1.5rem;max-width:360px;width:90%;}
+.modal h3{font-family:'DM Serif Display',serif;font-size:1.15rem;margin-bottom:0.5rem;}
+.modal p{font-size:0.82rem;color:#3D3D39;line-height:1.7;margin-bottom:1rem;}
+.csum{background:#E1F5EE;border-radius:2px;padding:0.8rem;margin-bottom:0.9rem;font-size:0.76rem;color:#085041;line-height:1.8;}
+.mbtns{display:flex;gap:0.5rem;}
+.mbtns button{flex:1;padding:0.65rem;border-radius:2px;font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;font-weight:500;}
+.mbp{background:#1D9E75;color:#fff;border:none;}
+.mbs{background:transparent;color:#1A1A18;border:1px solid rgba(26,26,24,0.15);}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1A1A18;color:#F8F5EF;padding:0.6rem 1.2rem;border-radius:2px;font-size:0.8rem;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:99;}
+.toast.show{opacity:1;}
+@media(max-width:680px){.panel{width:220px;}.main{flex-direction:column;}.panel{width:100%;max-height:260px;border-left:none;border-top:1px solid rgba(26,26,24,0.1);}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="tb-brand">Bay Modular <span>Solo Configurator</span></div>
+    <a href="index.html" style="font-size:0.75rem;color:#6B6B65;text-decoration:none;cursor:pointer;" class="hback">← Back to Proposal</a>
+    <div class="tb-price">
+      <div class="tp-lbl">Est. total</div>
+      <div class="tp-val" id="hprice">$202,900</div>
+      <div class="tp-note">+ site work $40–60K</div>
+    </div>
+    <button class="tb-btn" onclick="openModal()">Get Quote →</button>
+  </div>
+
+  <div class="main">
+    <div class="canvas-side">
+      <div class="vtabs">
+        <div class="vtab on" onclick="setView('top',this)">Top View</div>
+        <div class="vtab" onclick="setView('iso',this)">3D Isometric</div>
+        <div class="vtab" onclick="setView('front',this)">Front Elevation</div>
+      </div>
+      <div class="cview" id="cview">
+        <canvas id="cv"></canvas>
+        <div class="drag-hint" id="dhint">Drag the ADU to position it in your yard</div>
+      </div>
+      <div class="corner-btns">
+        <div class="cbtn" title="Rotate" onclick="doRotate()">↻</div>
+        <div class="cbtn" title="Reset position" onclick="doReset()">⌖</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="psec">
+        <div class="ptitle">Model</div>
+        <div class="mopts">
+          <div class="mopt" id="om-mini" onclick="pickModel('mini')">
+            <div><div class="mn">Solo 2 Mini</div><div class="ms">256 sqft · Studio · Smallest</div></div>
+            <div class="mp">~$165K</div>
+          </div>
+          <div class="mopt on" id="om-s2" onclick="pickModel('s2')">
+            <div><div class="mn">Solo 2</div><div class="ms">320 sqft · Studio</div></div>
+            <div class="mp">$182,400</div>
+          </div>
+          <div class="mopt" id="om-s3" onclick="pickModel('s3')">
+            <div><div class="mn">Solo 3</div><div class="ms">480 sqft · 1 bed / 1 bath</div></div>
+            <div class="mp">$273,600</div>
+          </div>
+          <div class="mopt" id="om-s4" onclick="pickModel('s4')">
+            <div><div class="mn">Solo 4</div><div class="ms">640 sqft · 2 bed / 1 bath</div></div>
+            <div class="mp">$367,800</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="psec">
+        <div class="ptitle">Finish</div>
+        <div class="flbl">Container color</div>
+        <div class="sws" id="sw-body">
+          <div class="sw on" title="Forest Green" style="background:#5A6B5A" onclick="setBody('#5A6B5A','#fff',this)"></div>
+          <div class="sw" title="Slate Gray" style="background:#3A3F45" onclick="setBody('#3A3F45','#fff',this)"></div>
+          <div class="sw" title="Desert Tan" style="background:#8B7355" onclick="setBody('#8B7355','#fff',this)"></div>
+          <div class="sw" title="Navy" style="background:#2C4A6E" onclick="setBody('#2C4A6E','#fff',this)"></div>
+          <div class="sw" title="Brick Red" style="background:#6B2D2D" onclick="setBody('#6B2D2D','#fff',this)"></div>
+          <div class="sw" title="Off-White" style="background:#E8E4DC;border:1px solid #bbb" onclick="setBody('#E8E4DC','#3A3F45',this)"></div>
+        </div>
+        <div class="flbl">Trim</div>
+        <div class="sws" id="sw-trim">
+          <div class="sw on" title="Off-White" style="background:#E8E4DC;border:1px solid #bbb" onclick="setTrim('#E8E4DC',this)"></div>
+          <div class="sw" title="Black" style="background:#1A1A18" onclick="setTrim('#1A1A18',this)"></div>
+          <div class="sw" title="Warm Wood" style="background:#C0A870" onclick="setTrim('#C0A870',this)"></div>
+          <div class="sw" title="Green" style="background:#1D9E75" onclick="setTrim('#1D9E75',this)"></div>
+        </div>
+        <div class="flbl">Deck</div>
+        <div class="sws" id="sw-deck">
+          <div class="sw on" title="Ipe" style="background:#6B4E2A" onclick="setDeck('#6B4E2A',this)"></div>
+          <div class="sw" title="Cedar" style="background:#9B6B3A" onclick="setDeck('#9B6B3A',this)"></div>
+          <div class="sw" title="Gray Composite" style="background:#7A7A72" onclick="setDeck('#7A7A72',this)"></div>
+          <div class="sw" title="Tan Composite" style="background:#C8B89A" onclick="setDeck('#C8B89A',this)"></div>
+        </div>
+      </div>
+
+      <div class="psec">
+        <div class="ptitle">Upgrades</div>
+        <div class="ftog"><label>Solar Panels (100% offset)</label><span class="fpr">+$12K</span><div class="tgl on" id="tg-solar" onclick="togUp('solar',12000,this)"></div></div>
+        <div class="ftog"><label>Select Series Finishes</label><span class="fpr">+$8K</span><div class="tgl" id="tg-sel" onclick="togUp('sel',8000,this)"></div></div>
+        <div class="ftog"><label>Full Appliance Package</label><span class="fpr">+$5K</span><div class="tgl on" id="tg-appl" onclick="togUp('appl',5000,this)"></div></div>
+        <div class="ftog"><label>Deck Overhang</label><span class="fpr">+$3.5K</span><div class="tgl on" id="tg-deck" onclick="togUp('deck',3500,this)"></div></div>
+        <div class="ftog"><label>Premium Windows</label><span class="fpr">+$4.5K</span><div class="tgl" id="tg-win" onclick="togUp('win',4500,this)"></div></div>
+      </div>
+
+      <div class="sum">
+        <div class="si"><span class="sl" id="slbl">Solo 2 base</span><span class="sv" id="sbase">$182,400</span></div>
+        <div class="si"><span class="sl">Upgrades</span><span class="sv" id="supg">+$20,500</span></div>
+        <div class="sdiv"></div>
+        <div class="strow"><span class="stl">ADU Total</span><span class="stv" id="stot">$202,900</span></div>
+        <div class="si" style="margin-top:0.2rem;"><span class="sl" style="font-size:0.67rem;">Site work (est.)</span><span class="sv" style="font-size:0.67rem;color:#6B6B65;">+$40–60K</span></div>
+        <button class="qbtn" onclick="openModal()">Get Formal Quote →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mbg" id="mbg">
+  <div class="modal">
+    <h3>Your Configuration</h3>
+    <div class="csum" id="csum"></div>
+    <p>Bay Modular will review your config and respond within 1 business day with a formal quote and free property feasibility assessment.</p>
+    <div class="mbtns">
+      <button class="mbp" onclick="submitQ()">Send to Bay Modular</button>
+      <button class="mbs" onclick="closeModal()">Keep Editing</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">Quote sent! Bay Modular will be in touch within 1 business day.</div>
+
+<script>
+const MDLS={
+  mini:{name:'Solo 2 Mini',price:165000,sqft:256,spec:'Studio',w:16,d:20},
+  s2:  {name:'Solo 2',     price:182400,sqft:320,spec:'Studio',w:16,d:24},
+  s3:  {name:'Solo 3',     price:273600,sqft:480,spec:'1 bed/1 bath',w:24,d:24},
+  s4:  {name:'Solo 4',     price:367800,sqft:640,spec:'2 bed/1 bath',w:32,d:24}
+};
+const S={
+  mdl:'s2', body:'#5A6B5A', txt:'#fff', trim:'#E8E4DC', deck:'#6B4E2A',
+  ups:{solar:12000,appl:5000,deck:3500},
+  rot:false, ax:0, ay:0, sc:0,
+  view:'top', drag:false, dsx:0, dsy:0, oax:0, oay:0
+};
+
+function shade(c,p){
+  const n=parseInt(c.replace('#',''),16);
+  const a=Math.round(2.55*p);
+  const r=Math.min(255,Math.max(0,(n>>16)+a));
+  const g=Math.min(255,Math.max(0,((n>>8)&255)+a));
+  const b=Math.min(255,Math.max(0,(n&255)+a));
+  return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+// ---------- TOP VIEW ----------
+function initTop(){
+  const cv=document.getElementById('cv');
+  const vw=document.getElementById('cview');
+  const W=vw.clientWidth, H=vw.clientHeight;
+  cv.width=W; cv.height=H;
+  const lotFW=60, lotFH=85;
+  S.sc=Math.min((W*0.88)/lotFW,(H*0.9)/lotFH);
+  S.lw=lotFW*S.sc; S.lh=lotFH*S.sc;
+  S.ox=(W-S.lw)/2; S.oy=(H-S.lh)/2;
+  const m=MDLS[S.mdl];
+  const aw=(S.rot?m.d:m.w)*S.sc, ah=(S.rot?m.w:m.d)*S.sc;
+  if(!S.ax){S.ax=S.ox+(S.lw-aw)/2; S.ay=S.oy+S.lh-ah-5*S.sc;}
+  drawTop();
+}
+
+function drawTop(){
+  const cv=document.getElementById('cv');
+  if(!cv.width||S.view!=='top') return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const {ox:ox,oy:oy,lw:lw,lh:lh,sc:sc}=S;
+  // yard bg
+  ctx.fillStyle='#C8D9A0'; ctx.strokeStyle='#8BAF5A'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(ox,oy,lw,lh,4); ctx.fill(); ctx.stroke();
+  // house
+  ctx.fillStyle='#B8A898'; ctx.strokeStyle='#9A8878'; ctx.lineWidth=1;
+  const hw=28*sc, hh=16*sc;
+  ctx.fillRect(ox+(lw-hw)/2, oy+1.5*sc, hw, hh);
+  ctx.strokeRect(ox+(lw-hw)/2, oy+1.5*sc, hw, hh);
+  ctx.fillStyle='rgba(80,60,50,0.55)';
+  ctx.font=`500 ${Math.max(8,sc*1.1)}px DM Sans,sans-serif`;
+  ctx.textAlign='center';
+  ctx.fillText('Main House', ox+lw/2, oy+1.5*sc+hh/2+4);
+  // driveway
+  ctx.fillStyle='#C0B8A8';
+  ctx.fillRect(ox+lw-9*sc, oy, 9*sc, 20*sc);
+  // trees
+  const tsz=Math.max(14,sc*2);
+  ctx.font=`${tsz}px serif`;
+  ctx.fillText('🌳',ox+4*sc, oy+lh-13*sc);
+  ctx.fillText('🌳',ox+lw-7*sc, oy+lh-18*sc);
+  // setback line
+  ctx.setLineDash([4,3]); ctx.strokeStyle='rgba(180,0,0,0.22)'; ctx.lineWidth=0.75;
+  ctx.beginPath(); ctx.moveTo(ox, oy+lh-4*sc); ctx.lineTo(ox+lw, oy+lh-4*sc); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(180,0,0,0.3)'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='right';
+  ctx.fillText('4 ft setback', ox+lw-3, oy+lh-4*sc-3);
+  // sun
+  ctx.font='15px serif'; ctx.textAlign='right';
+  ctx.fillText('☀️', ox+lw-3, oy+17);
+  // ADU
+  const m=MDLS[S.mdl];
+  const aw=(S.rot?m.d:m.w)*sc, ah=(S.rot?m.w:m.d)*sc;
+  S.ax=Math.max(ox, Math.min(ox+lw-aw, S.ax));
+  S.ay=Math.max(oy+20*sc, Math.min(oy+lh-ah-4*sc, S.ay));
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.fillRect(S.ax+3,S.ay+3,aw,ah);
+  // deck
+  ctx.fillStyle=S.deck; ctx.globalAlpha=0.82;
+  ctx.fillRect(S.ax, S.ay+ah, aw, 3.5*sc);
+  ctx.globalAlpha=1;
+  // body
+  ctx.fillStyle=S.body; ctx.fillRect(S.ax,S.ay,aw,ah);
+  // ribs
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=0.5;
+  for(let rx=S.ax+5;rx<S.ax+aw;rx+=7){
+    ctx.beginPath(); ctx.moveTo(rx,S.ay); ctx.lineTo(rx,S.ay+ah); ctx.stroke();
+  }
+  // solar on top
+  if(S.ups.solar){
+    ctx.fillStyle='rgba(34,85,170,0.45)';
+    ctx.fillRect(S.ax+aw*0.12,S.ay+2,aw*0.76,ah*0.42);
+  }
+  // trim border
+  ctx.strokeStyle=S.trim; ctx.lineWidth=1.5;
+  ctx.strokeRect(S.ax,S.ay,aw,ah);
+  // label
+  ctx.fillStyle=S.txt;
+  ctx.font=`500 ${Math.max(8,sc*1.3)}px DM Sans,sans-serif`;
+  ctx.textAlign='center';
+  ctx.fillText(m.name, S.ax+aw/2, S.ay+ah/2-3);
+  ctx.font=`${Math.max(7,sc*1.05)}px DM Sans,sans-serif`;
+  ctx.fillText(`${S.rot?m.d:m.w}' × ${S.rot?m.w:m.d}'`, S.ax+aw/2, S.ay+ah/2+9);
+  // dim
+  ctx.fillStyle='rgba(26,26,24,0.38)'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${S.rot?m.d:m.w} ft`, S.ax+aw/2, S.ay-4);
+}
+
+// ---------- ISO VIEW ----------
+function drawIso(){
+  const cv=document.getElementById('cv');
+  const vw=document.getElementById('cview');
+  cv.width=vw.clientWidth; cv.height=vw.clientHeight;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const m=MDLS[S.mdl];
+  const fw=S.rot?m.d:m.w, fd=S.rot?m.w:m.d, fh=9.5;
+  const sx=Math.min(16,W/80), sy=Math.min(7,H/80), sz=Math.min(18,H/24);
+  const iso=(x,y,z)=>({x:W/2+(x-y)*sx, y:H*0.78-z*sz+(x+y)*sy});
+  const face=(pts,fill,str='rgba(0,0,0,0.1)')=>{
+    ctx.fillStyle=fill; ctx.strokeStyle=str; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath(); ctx.fill(); ctx.stroke();
+  };
+  // ground
+  const gc=[[0,0],[62,0],[62,58],[0,58]].map(([x,y])=>iso(x,y,0));
+  ctx.fillStyle='#C8D9A0'; ctx.beginPath(); ctx.moveTo(gc[0].x,gc[0].y);
+  gc.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#8BAF5A'; ctx.lineWidth=1; ctx.stroke();
+  // house
+  const hc=[[15,2],[43,2],[43,16],[15,16]].map(([x,y])=>iso(x,y,0));
+  ctx.fillStyle='#C0B0A0'; ctx.beginPath(); ctx.moveTo(hc[0].x,hc[0].y);
+  hc.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath(); ctx.fill();
+  // ADU
+  const ax=18, ay=30;
+  // deck
+  face([[ax,ay+fd],[ax+fw,ay+fd],[ax+fw,ay+fd+4],[ax,ay+fd+4]].map(([x,y])=>iso(x,y,0.25)),S.deck);
+  // back
+  face([iso(ax,ay,0),iso(ax+fw,ay,0),iso(ax+fw,ay,fh),iso(ax,ay,fh)],shade(S.body,0));
+  // left
+  face([iso(ax,ay,0),iso(ax,ay+fd,0),iso(ax,ay+fd,fh),iso(ax,ay,fh)],shade(S.body,-28));
+  // right
+  face([iso(ax+fw,ay,0),iso(ax+fw,ay+fd,0),iso(ax+fw,ay+fd,fh),iso(ax+fw,ay,fh)],shade(S.body,-14));
+  // top
+  face([iso(ax,ay,fh),iso(ax+fw,ay,fh),iso(ax+fw,ay+fd,fh),iso(ax,ay+fd,fh)],shade(S.body,20));
+  // solar
+  if(S.ups.solar){
+    for(let i=0;i<3;i++){
+      const px=ax+1.5+i*(fw/3-0.3);
+      face([iso(px,ay+1.5,fh+0.12),iso(px+fw/3-0.3,ay+1.5,fh+0.12),
+            iso(px+fw/3-0.3,ay+fd-1.5,fh+0.12),iso(px,ay+fd-1.5,fh+0.12)],'#2255AA','#1144AA');
+    }
+  }
+  // windows front
+  const nw=Math.max(1,Math.floor(fw/7.5));
+  for(let i=0;i<nw;i++){
+    const wx=ax+1.5+i*(fw/nw), ww=fw/nw-1.2;
+    face([iso(wx,ay+fd,1.6),iso(wx+ww,ay+fd,1.6),iso(wx+ww,ay+fd,5.4),iso(wx,ay+fd,5.4)],'rgba(180,220,240,0.82)',S.trim);
+  }
+  // door
+  const dx=ax+fw/2-1;
+  face([iso(dx,ay+fd,0),iso(dx+2,ay+fd,0),iso(dx+2,ay+fd,6.8),iso(dx,ay+fd,6.8)],'#3A2A1A',S.trim);
+  // ribs
+  ctx.strokeStyle=S.trim+'28'; ctx.lineWidth=0.4;
+  for(let r=1;r<fd;r+=3){
+    const p1=iso(ax,ay+r,0), p2=iso(ax,ay+r,fh);
+    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+  }
+  // trees
+  ctx.font='18px serif';
+  const t1=iso(6,16,0); ctx.fillText('🌳',t1.x,t1.y);
+  const t2=iso(52,20,0); ctx.fillText('🌳',t2.x,t2.y);
+  // label
+  const lp=iso(ax+fw/2,ay+fd/2,fh+1.8);
+  ctx.fillStyle='rgba(26,26,24,0.5)'; ctx.font='500 11px DM Sans,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${m.name} · ${m.sqft} sqft · ${m.spec}`,lp.x,lp.y);
+}
+
+// ---------- FRONT ELEVATION ----------
+function drawFront(){
+  const cv=document.getElementById('cv');
+  const vw=document.getElementById('cview');
+  cv.width=vw.clientWidth; cv.height=vw.clientHeight;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const m=MDLS[S.mdl];
+  const fw=m.w, fh=9.5;
+  const ppf=Math.min((W-80)/(fw+10),(H-80)/(fh+10));
+  const sx=(W-fw*ppf)/2, gy=H-55;
+  // sky
+  ctx.fillStyle='#D4E8F0'; ctx.fillRect(0,0,W,gy);
+  ctx.fillStyle='#C8D9A0'; ctx.fillRect(0,gy,W,H-gy);
+  // trees
+  ctx.font='26px serif';
+  ctx.fillText('🌳',sx-55,gy-2);
+  ctx.fillText('🌳',sx+fw*ppf+28,gy-2);
+  // house backdrop
+  ctx.fillStyle='#C0B0A0';
+  ctx.fillRect(sx-65,gy-(fh+5)*ppf,fw*ppf+130,(fh+5)*ppf);
+  ctx.fillStyle='#9A8070';
+  ctx.beginPath();
+  ctx.moveTo(sx-85,gy-(fh+5)*ppf);
+  ctx.lineTo(sx+fw*ppf/2+65,gy-(fh+11)*ppf);
+  ctx.lineTo(sx+fw*ppf+85,gy-(fh+5)*ppf);
+  ctx.closePath(); ctx.fill();
+  // deck
+  const dh=3.8*ppf;
+  ctx.fillStyle=S.deck; ctx.fillRect(sx-2,gy-dh,fw*ppf+4,dh);
+  // body
+  ctx.fillStyle=S.body;
+  ctx.fillRect(sx,gy-dh-fh*ppf,fw*ppf,fh*ppf);
+  // ribs
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=0.75;
+  for(let x=sx+5;x<sx+fw*ppf;x+=10){
+    ctx.beginPath(); ctx.moveTo(x,gy-dh-fh*ppf); ctx.lineTo(x,gy-dh); ctx.stroke();
+  }
+  // trim border
+  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
+  ctx.strokeRect(sx,gy-dh-fh*ppf,fw*ppf,fh*ppf);
+  // windows
+  const nw=Math.max(1,Math.floor(fw/8));
+  const ww=(fw*ppf*0.64)/nw, wh=2.8*ppf, wg=(fw*ppf*0.36)/(nw+1);
+  for(let i=0;i<nw;i++){
+    const wx=sx+wg+i*(ww+wg), wy=gy-dh-fh*ppf+1.8*ppf;
+    ctx.fillStyle='rgba(180,220,240,0.85)'; ctx.fillRect(wx,wy,ww,wh);
+    ctx.strokeStyle=S.trim; ctx.lineWidth=1.5; ctx.strokeRect(wx,wy,ww,wh);
+    ctx.beginPath(); ctx.moveTo(wx+ww/2,wy); ctx.lineTo(wx+ww/2,wy+wh); ctx.stroke();
+  }
+  // door
+  const dw=1.9*ppf, doh=6.3*ppf;
+  const doorX=sx+(fw*ppf-dw)/2;
+  ctx.fillStyle='#3A2A1A'; ctx.fillRect(doorX,gy-dh-doh,dw,doh);
+  ctx.strokeStyle=S.trim; ctx.lineWidth=1; ctx.strokeRect(doorX,gy-dh-doh,dw,doh);
+  // solar
+  if(S.ups.solar){
+    ctx.fillStyle='#2255AA';
+    ctx.fillRect(sx+8,gy-dh-fh*ppf-13,fw*ppf-16,13);
+    ctx.strokeStyle='#1144AA'; ctx.lineWidth=0.5;
+    for(let px=sx+12;px<sx+fw*ppf-12;px+=22){
+      ctx.beginPath(); ctx.moveTo(px,gy-dh-fh*ppf-13); ctx.lineTo(px,gy-dh-fh*ppf); ctx.stroke();
+    }
+  }
+  // dim line
+  ctx.strokeStyle='rgba(26,26,24,0.22)'; ctx.lineWidth=0.5; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(sx,gy+12); ctx.lineTo(sx+fw*ppf,gy+12); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(26,26,24,0.42)'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${m.w} ft wide`,sx+fw*ppf/2,gy+26);
+  ctx.fillStyle='rgba(26,26,24,0.38)'; ctx.font='500 11px DM Sans,sans-serif';
+  ctx.fillText(`${m.name} · Front Elevation`,W/2,18);
+}
+
+// ---------- VIEW SWITCH ----------
+function setView(v, tab){
+  S.view=v;
+  document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('on'));
+  tab.classList.add('on');
+  document.getElementById('dhint').style.display=v==='top'?'block':'none';
+  if(v==='top'){initTop();}
+  else if(v==='iso'){drawIso();}
+  else{drawFront();}
+}
+
+// ---------- DRAG ----------
+const cv=document.getElementById('cv');
+cv.addEventListener('mousedown',e=>{
+  if(S.view!=='top') return;
+  const r=cv.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  const m=MDLS[S.mdl];
+  const aw=(S.rot?m.d:m.w)*S.sc, ah=(S.rot?m.w:m.d)*S.sc;
+  if(mx>=S.ax&&mx<=S.ax+aw&&my>=S.ay&&my<=S.ay+ah){
+    S.drag=true; S.dsx=mx; S.dsy=my; S.oax=S.ax; S.oay=S.ay;
+    cv.style.cursor='grabbing';
+  }
+});
+document.addEventListener('mousemove',e=>{
+  if(!S.drag) return;
+  const r=cv.getBoundingClientRect();
+  S.ax=S.oax+(e.clientX-r.left-S.dsx);
+  S.ay=S.oay+(e.clientY-r.top-S.dsy);
+  drawTop();
+});
+document.addEventListener('mouseup',()=>{S.drag=false; cv.style.cursor='default';});
+cv.addEventListener('touchstart',e=>{
+  if(S.view!=='top') return;
+  const r=cv.getBoundingClientRect();
+  const mx=e.touches[0].clientX-r.left, my=e.touches[0].clientY-r.top;
+  const m=MDLS[S.mdl]; const aw=(S.rot?m.d:m.w)*S.sc, ah=(S.rot?m.w:m.d)*S.sc;
+  if(mx>=S.ax&&mx<=S.ax+aw&&my>=S.ay&&my<=S.ay+ah){
+    S.drag=true; S.dsx=mx; S.dsy=my; S.oax=S.ax; S.oay=S.ay;
+  }
+  e.preventDefault();
+},{passive:false});
+document.addEventListener('touchmove',e=>{
+  if(!S.drag||S.view!=='top') return;
+  const r=cv.getBoundingClientRect();
+  S.ax=S.oax+(e.touches[0].clientX-r.left-S.dsx);
+  S.ay=S.oay+(e.touches[0].clientY-r.top-S.dsy);
+  drawTop(); e.preventDefault();
+},{passive:false});
+document.addEventListener('touchend',()=>{S.drag=false;});
+
+// ---------- CONTROLS ----------
+function doRotate(){S.rot=!S.rot; redraw();}
+function doReset(){S.ax=0;S.ay=0;S.rot=false;initTop();}
+function redraw(){
+  if(S.view==='top') drawTop();
+  else if(S.view==='iso') drawIso();
+  else drawFront();
+}
+
+// ---------- MODEL ----------
+function pickModel(id){
+  S.mdl=id; S.ax=0; S.ay=0;
+  document.querySelectorAll('.mopt').forEach(el=>el.classList.remove('on'));
+  document.getElementById('om-'+id).classList.add('on');
+  document.getElementById('slbl').textContent=MDLS[id].name+' base';
+  document.getElementById('sbase').textContent='$'+MDLS[id].price.toLocaleString();
+  updateTotal(); initTop();
+}
+
+// ---------- COLORS ----------
+function activeSw(grp,el){document.querySelectorAll('#'+grp+' .sw').forEach(s=>s.classList.remove('on'));el.classList.add('on');}
+function setBody(c,t,el){S.body=c;S.txt=t;activeSw('sw-body',el);redraw();}
+function setTrim(c,el){S.trim=c;activeSw('sw-trim',el);redraw();}
+function setDeck(c,el){S.deck=c;activeSw('sw-deck',el);redraw();}
+
+// ---------- UPGRADES ----------
+function togUp(key,price,el){
+  el.classList.toggle('on');
+  if(el.classList.contains('on')) S.ups[key]=price; else delete S.ups[key];
+  updateTotal(); if(key==='solar')redraw();
+}
+function updateTotal(){
+  const u=Object.values(S.ups).reduce((a,b)=>a+b,0);
+  const t=MDLS[S.mdl].price+u;
+  document.getElementById('supg').textContent='+$'+u.toLocaleString();
+  document.getElementById('stot').textContent='$'+t.toLocaleString();
+  document.getElementById('hprice').textContent='$'+t.toLocaleString();
+}
+
+// ---------- MODAL ----------
+function openModal(){
+  const m=MDLS[S.mdl];
+  const un={solar:'Solar Panels',sel:'Select Finishes',appl:'Appliances',deck:'Deck Overhang',win:'Premium Windows'};
+  const ul=Object.keys(S.ups).map(k=>un[k]).join(', ')||'None';
+  const t=m.price+Object.values(S.ups).reduce((a,b)=>a+b,0);
+  document.getElementById('csum').innerHTML=
+    `<strong>${m.name}</strong> · ${m.sqft} sqft · ${m.spec}<br>`+
+    `Color: ${document.querySelector('#sw-body .sw.on').title}<br>`+
+    `Upgrades: ${ul}<br>`+
+    `<strong>Est. Total: $${t.toLocaleString()} + site work ($40–60K)</strong>`;
+  document.getElementById('mbg').classList.add('show');
+}
+function closeModal(){document.getElementById('mbg').classList.remove('show');}
+function submitQ(){
+  closeModal();
+  const t=document.getElementById('toast');
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+window.addEventListener('load',()=>{initTop();updateTotal();});
+window.addEventListener('resize',()=>{S.ax=0;S.ay=0;
+  if(S.view==='top')initTop();
+  else if(S.view==='iso')drawIso();
+  else drawFront();
+});
+</script>
+</body>
+</html>

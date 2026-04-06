@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADU Advisor — Bay Modular × Jugaad AI</title>
+<meta name="description" content="Chat with Bay Modular's AI ADU Advisor. Get instant answers on zoning, permits, pricing, and Solo model recommendations for your Bay Area property.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-deeper: #085041;
+    --green-light: #E1F5EE;
+    --green-mid: #5DCAA5;
+    --cream: #F8F5EF;
+    --ink: #1A1A18;
+    --ink-mid: #3D3D39;
+    --ink-soft: #6B6B65;
+    --border: rgba(26,26,24,0.1);
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; height: 100%; }
+  body {
+    font-family: var(--sans);
+    background: var(--green-deeper);
+    color: var(--ink);
+    height: 100%;
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* BACKGROUND */
+  .bg-layer {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(29,158,117,0.35) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(8,80,65,0.6) 0%, transparent 55%),
+      linear-gradient(160deg, #071a15 0%, #0a2e22 40%, #0f3d2e 100%);
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 60px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 60px);
+  }
+
+  /* TOP BAR */
+  .topbar {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: rgba(8,80,65,0.4);
+    backdrop-filter: blur(16px);
+    flex-shrink: 0;
+  }
+  .topbar-brand {
+    font-family: var(--serif); font-size: 1rem; color: #fff;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .topbar-brand .brand-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green-mid);
+    box-shadow: 0 0 10px var(--green-mid);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--green-mid); }
+    50% { opacity: 0.6; box-shadow: 0 0 20px var(--green-mid); }
+  }
+  .topbar-brand .brand-name { color: #fff; }
+  .topbar-brand .brand-name span { color: var(--green-mid); }
+  .topbar-back {
+    font-size: 0.8rem; color: rgba(255,255,255,0.55);
+    text-decoration: none; display: flex; align-items: center; gap: 0.4rem;
+    transition: color 0.2s;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .topbar-back:hover { color: var(--green-mid); }
+  .topbar-status {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.78rem; color: rgba(255,255,255,0.5);
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green-mid);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* MAIN LAYOUT */
+  .chat-layout {
+    position: relative; z-index: 5;
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 62px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 280px; flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    background: rgba(8,80,65,0.25);
+    backdrop-filter: blur(12px);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+  .sidebar-section h4 {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: rgba(93,202,165,0.7);
+    margin-bottom: 0.75rem;
+  }
+  .quick-prompt {
+    display: block; width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 0.65rem 0.9rem;
+    font-family: var(--sans); font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+    text-align: left; cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0.4rem;
+    line-height: 1.4;
+  }
+  .quick-prompt:hover {
+    background: rgba(29,158,117,0.15);
+    border-color: rgba(29,158,117,0.3);
+    color: #fff;
+  }
+  .sidebar-divider { height: 1px; background: rgba(255,255,255,0.07); }
+  .info-card {
+    background: rgba(29,158,117,0.1);
+    border: 1px solid rgba(29,158,117,0.2);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .info-card .ic-label {
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--green-mid);
+    margin-bottom: 0.5rem;
+  }
+  .info-card .ic-val {
+    font-family: var(--serif); font-size: 1.5rem; color: #fff;
+    line-height: 1; margin-bottom: 0.25rem;
+  }
+  .info-card .ic-sub { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+  .city-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .city-pill {
+    font-size: 0.72rem; padding: 0.25rem 0.6rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px; color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .city-pill:hover { border-color: var(--green-mid); color: var(--green-mid); background: rgba(29,158,117,0.1); }
+
+  /* CHAT AREA */
+  .chat-main {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .chat-messages {
+    flex: 1; overflow-y: auto;
+    padding: 2rem;
+    display: flex; flex-direction: column;
+    gap: 1.5rem;
+    scroll-behavior: smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* MESSAGES */
+  .msg { display: flex; gap: 1rem; max-width: 780px; }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 600;
+  }
+  .msg.bot .msg-avatar {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    box-shadow: 0 4px 16px rgba(29,158,117,0.3);
+    font-size: 1rem;
+  }
+  .msg.user .msg-avatar {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem;
+  }
+  .msg-bubble {
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    max-width: 620px;
+    line-height: 1.7;
+    font-size: 0.9rem;
+  }
+  .msg.bot .msg-bubble {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.88);
+    border-top-left-radius: 4px;
+    backdrop-filter: blur(8px);
+  }
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 20px rgba(29,158,117,0.25);
+  }
+  .msg-bubble strong { color: var(--green-mid); font-weight: 600; }
+  .msg-bubble ul { margin: 0.5rem 0 0 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .msg-bubble ul li { color: rgba(255,255,255,0.8); }
+  .msg-bubble .highlight-box {
+    background: rgba(29,158,117,0.12);
+    border: 1px solid rgba(29,158,117,0.25);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+  }
+  .msg-bubble .highlight-box .hb-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--green-mid); margin-bottom: 0.4rem;
+  }
+  .msg-time {
+    font-size: 0.68rem; color: rgba(255,255,255,0.25);
+    margin-top: 0.4rem; padding: 0 0.25rem;
+    align-self: flex-end;
+  }
+  .msg.user .msg-time { text-align: right; }
+
+  /* TYPING */
+  .typing-indicator {
+    display: flex; gap: 0.3rem; align-items: center;
+    padding: 0.75rem 1rem;
+  }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green-mid); opacity: 0.4;
+    animation: typingBounce 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* WELCOME CARDS */
+  .welcome-cards {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .welcome-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .welcome-card:hover {
+    background: rgba(29,158,117,0.12);
+    border-color: rgba(29,158,117,0.3);
+    transform: translateY(-1px);
+  }
+  .welcome-card .wc-icon { font-size: 1.2rem; margin-bottom: 0.4rem; }
+  .welcome-card .wc-text {
+    font-size: 0.8rem; color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+  }
+
+  /* INPUT BAR */
+  .chat-input-area {
+    padding: 1.25rem 2rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    background: rgba(8,80,65,0.3);
+    backdrop-filter: blur(16px);
+    flex-shrink: 0;
+  }
+  .chat-input-wrap {
+    display: flex; align-items: flex-end; gap: 0.75rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s;
+  }
+  .chat-input-wrap:focus-within {
+    border-color: rgba(29,158,117,0.5);
+    box-shadow: 0 0 0 3px rgba(29,158,117,0.08);
+  }
+  .chat-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: var(--sans); font-size: 0.9rem;
+    color: rgba(255,255,255,0.88);
+    resize: none; max-height: 160px;
+    line-height: 1.5;
+  }
+  .chat-input::placeholder { color: rgba(255,255,255,0.3); }
+  .send-btn {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: var(--green); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    color: #fff; font-size: 1rem;
+  }
+  .send-btn:hover { background: var(--green-dark); transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.96); }
+  .send-btn:disabled { background: rgba(255,255,255,0.1); cursor: not-allowed; transform: none; }
+  .input-hint {
+    font-size: 0.7rem; color: rgba(255,255,255,0.25);
+    margin-top: 0.6rem; text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+  /* LEAD CAPTURE CARD */
+  .lead-card {
+    background: linear-gradient(135deg, rgba(29,158,117,0.15) 0%, rgba(8,80,65,0.3) 100%);
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 0.75rem;
+  }
+  .lead-card h4 { font-family: var(--serif); font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem; }
+  .lead-card p { font-size: 0.82rem; color: rgba(255,255,255,0.6); margin-bottom: 1rem; line-height: 1.6; }
+  .lead-form { display: flex; gap: 0.65rem; }
+  .lead-form input {
+    flex: 1; background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; padding: 0.6rem 0.9rem;
+    font-family: var(--sans); font-size: 0.85rem;
+    color: #fff; outline: none;
+    transition: border-color 0.2s;
+  }
+  .lead-form input::placeholder { color: rgba(255,255,255,0.3); }
+  .lead-form input:focus { border-color: var(--green-mid); }
+  .lead-form button {
+    padding: 0.6rem 1.25rem; border-radius: 6px;
+    background: var(--green); border: none; cursor: pointer;
+    font-family: var(--sans); font-size: 0.82rem; font-weight: 500;
+    color: #fff; white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .lead-form button:hover { background: var(--green-dark); }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .chat-messages { padding: 1.25rem; }
+    .chat-input-area { padding: 1rem 1.25rem 1.25rem; }
+    .welcome-cards { grid-template-columns: 1fr; }
+    .topbar { padding: 0.85rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="bg-grid"></div>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-dot"></div>
+    <div class="brand-name">Bay Modular <span>× Jugaad AI</span></div>
+  </div>
+  <div class="topbar-status">
+    <div class="status-dot"></div>
+    ADU Advisor · Online
+  </div>
+  <a href="index.html" class="topbar-back">← Back to Proposal</a>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="chat-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h4>Quick Questions</h4>
+      <button class="quick-prompt" onclick="sendQuickPrompt('Can I build an ADU on my Bay Area property?')">Can I build an ADU on my property?</button>
+      <button class="quick-prompt" onclick="sendQuickPrompt('How much does a Bay Modular Solo ADU cost?')">How much does a Solo ADU cost?</button>
+      <button class="quick-prompt" onclick="sendQuickPrompt('How long does the permitting process take?')">How long does permitting take?</button>
+      <button class="quick-prompt" onclick="sendQuickPrompt('What rental income can I expect from an ADU in Oakland?')">What rental income can I expect?</button>
+      <button class="quick-prompt" onclick="sendQuickPrompt('What makes Bay Modular ADUs sustainable?')">What makes them sustainable?</button>
+      <button class="quick-prompt" onclick="sendQuickPrompt('What Solar savings can I get with a Bay Modular ADU?')">Solar savings breakdown?</button>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <h4>Bay Area Cities Served</h4>
+      <div class="city-pills">
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Oakland')">Oakland</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in San Jose')">San Jose</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Fremont')">Fremont</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Berkeley')">Berkeley</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in San Francisco')">San Francisco</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Palo Alto')">Palo Alto</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Hayward')">Hayward</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Concord')">Concord</span>
+        <span class="city-pill" onclick="sendQuickPrompt('Tell me about ADUs in Richmond')">Richmond</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="info-card">
+        <div class="ic-label">Avg. Bay Area ADU Rent</div>
+        <div class="ic-val">$3,500</div>
+        <div class="ic-sub">/ month · Studio to 2BR</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="info-card">
+        <div class="ic-label">CA ADU Permits (2023)</div>
+        <div class="ic-val">26,900+</div>
+        <div class="ic-sub">Up 200%+ in 3 years</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CHAT MAIN -->
+  <main class="chat-main">
+    <div class="chat-messages" id="chatMessages">
+
+      <!-- Welcome message -->
+      <div class="msg bot" id="welcomeMsg">
+        <div class="msg-avatar">🏠</div>
+        <div>
+          <div class="msg-bubble">
+            <strong>Hi, I'm your Bay Modular ADU Advisor.</strong> I'm trained on Bay Area zoning policies, Solo model specs, permitting timelines, and rental income data across every city we serve.<br><br>
+            I can help you:
+            <ul>
+              <li>Check if your property qualifies for an ADU</li>
+              <li>Compare Solo 2, 3, and 4 models</li>
+              <li>Estimate rental income &amp; solar ROI by city</li>
+              <li>Walk you through the permitting process</li>
+              <li>Answer any sustainability questions</li>
+            </ul>
+            <div class="welcome-cards">
+              <div class="welcome-card" onclick="sendQuickPrompt('Can I build an ADU on my Bay Area property?')">
+                <div class="wc-icon">📍</div>
+                <div class="wc-text">Check property eligibility</div>
+              </div>
+              <div class="welcome-card" onclick="sendQuickPrompt('Compare Solo 2 vs Solo 3 vs Solo 4 models')">
+                <div class="wc-icon">📐</div>
+                <div class="wc-text">Compare Solo models</div>
+              </div>
+              <div class="welcome-card" onclick="sendQuickPrompt('What rental income can I expect from an ADU in Oakland?')">
+                <div class="wc-icon">💰</div>
+                <div class="wc-text">Estimate rental income</div>
+              </div>
+              <div class="welcome-card" onclick="sendQuickPrompt('How long does the permitting process take?')">
+                <div class="wc-icon">📋</div>
+                <div class="wc-text">Permitting timeline</div>
+              </div>
+            </div>
+          </div>
+          <div class="msg-time">Just now · ADU Advisor AI</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- INPUT AREA -->
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea
+          id="chatInput"
+          class="chat-input"
+          placeholder="Ask anything about ADUs, zoning, pricing, or your property…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+          &#9658;
+        </button>
+      </div>
+      <div class="input-hint">Powered by Jugaad AI · Bay Area ADU knowledge base · Press Enter to send, Shift+Enter for new line</div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // ─────────────────────── KNOWLEDGE BASE ───────────────────────
+  const KB = {
+    greeting: [
+      "Hi there! How can I help you with your Bay Area ADU project today?",
+      "Hello! I'm here to help with anything ADU-related in the Bay Area."
+    ],
+    cost: {
+      keywords: ["cost", "price", "pricing", "how much", "expensive", "afford", "budget", "dollar", "$"],
+      response: (city) => `
+<strong>Bay Modular Solo ADU Pricing</strong><br><br>
+Our all-electric, HCD-certified Solo models are priced turnkey — that means design, permits, factory build, delivery, and site work are all included.<br><br>
+<ul>
+  <li><strong>Solo 2 (320 sq ft):</strong> Starting around $145,000</li>
+  <li><strong>Solo 3 (480 sq ft):</strong> Starting around $185,000</li>
+  <li><strong>Solo 4 (640 sq ft):</strong> Starting around $235,000</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">⚡ Turnkey Advantage</div>
+  Traditional site-built ADUs in the Bay Area run $250,000–$400,000+. Bay Modular's factory precision and modular process cuts that significantly — typically 30–40% lower cost per square foot.
+</div>
+Want me to run a personalized ROI projection for your city and model choice?`
+    },
+    eligibility: {
+      keywords: ["eligible", "qualify", "can i build", "my property", "lot size", "setback", "zoning", "allowed", "permit"],
+      response: () => `
+<strong>ADU Eligibility in the Bay Area</strong><br><br>
+California's 2020 ADU laws (AB 68, SB 13) made it significantly easier to build ADUs state-wide. Here's what generally qualifies:<br><br>
+<ul>
+  <li>✅ Single-family or multi-family residential lot</li>
+  <li>✅ Lot size typically 5,000+ sq ft (some cities allow 4,000+)</li>
+  <li>✅ 4-foot rear and side setbacks (state minimum)</li>
+  <li>✅ Existing home or garage on property</li>
+  <li>✅ Not in a flood zone or high fire hazard area</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">📍 Get a precise check</div>
+  For an instant eligibility assessment specific to your address, try our <a href="bay_modular_feasibility_tool.html" style="color: var(--green-mid);">AI Feasibility Tool →</a> — it pulls your parcel data, zoning code, and lot dimensions in under 60 seconds.
+</div>`
+    },
+    permitting: {
+      keywords: ["permit", "permitting", "approval", "timeline", "how long", "process", "time", "months"],
+      response: (city) => {
+        const timelines = {
+          Oakland: "8–12 weeks (Oakland streamlined ADU permit track)",
+          "San Jose": "10–14 weeks",
+          Fremont: "10–16 weeks",
+          Berkeley: "12–18 weeks (strict design review process)",
+          "San Francisco": "18–24 weeks (most complex in Bay Area)",
+          "Palo Alto": "12–16 weeks",
+          default: "10–16 weeks on average"
+        };
+        const t = city && timelines[city] ? timelines[city] : timelines.default;
+        return `
+<strong>Bay Area ADU Permitting Timeline</strong><br><br>
+Permitting is often the longest step — but Bay Modular handles the full process for you, including architectural drawings, structural calculations, title-24 energy, and all city submissions.<br><br>
+${city ? `<strong>${city} Timeline:</strong> ${t}` : `Typical Bay Area range: <strong>${t}</strong>`}<br><br>
+<ul>
+  <li><strong>Step 1 — Design &amp; Docs:</strong> 2–3 weeks (we handle this)</li>
+  <li><strong>Step 2 — City Plan Check:</strong> 4–10 weeks (varies by city)</li>
+  <li><strong>Step 3 — Factory Build:</strong> 6–8 weeks (happens in parallel)</li>
+  <li><strong>Step 4 — Site Prep &amp; Install:</strong> 1–2 weeks</li>
+  <li><strong>Step 5 — Final Inspections:</strong> 1–2 weeks</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">🏗 Total typical timeline</div>
+  Most Bay Modular ADUs are move-in ready within <strong>5–7 months</strong> from the start of design — faster than any traditional construction method.
+</div>`
+      }
+    },
+    rental: {
+      keywords: ["rental", "rent", "income", "earning", "revenue", "monthly", "cash flow", "tenants", "airbnb", "lease"],
+      response: (city) => {
+        const rents = {
+          "San Francisco": { studio: "$2,800", oneBR: "$3,800", twoBR: "$4,900" },
+          "Palo Alto": { studio: "$2,600", oneBR: "$3,600", twoBR: "$4,700" },
+          Oakland: { studio: "$2,200", oneBR: "$2,900", twoBR: "$3,800" },
+          Berkeley: { studio: "$2,300", oneBR: "$3,100", twoBR: "$4,000" },
+          "San Jose": { studio: "$2,100", oneBR: "$2,800", twoBR: "$3,600" },
+          Fremont: { studio: "$1,900", oneBR: "$2,500", twoBR: "$3,300" },
+          Hayward: { studio: "$1,700", oneBR: "$2,300", twoBR: "$2,900" },
+          Concord: { studio: "$1,600", oneBR: "$2,200", twoBR: "$2,800" },
+          default: { studio: "$2,000", oneBR: "$2,700", twoBR: "$3,500" }
+        };
+        const r = city && rents[city] ? rents[city] : rents.default;
+        const loc = city || "the Bay Area";
+        return `
+<strong>Rental Income Estimates — ${loc}</strong><br><br>
+Based on current Zillow and Apartment List data for ${loc}:<br><br>
+<ul>
+  <li><strong>Solo 2 (Studio/1BR layout):</strong> ${r.studio}–${r.oneBR}/mo</li>
+  <li><strong>Solo 3 (1–2BR layout):</strong> ${r.oneBR}–${r.twoBR}/mo</li>
+  <li><strong>Solo 4 (2BR layout):</strong> ${r.twoBR}+/mo</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">💰 10-Year Projection (Solo 3, ${loc})</div>
+  At ${r.oneBR}/mo with 3% annual rent growth, you'd collect roughly <strong>${estimateTenYear(r.oneBR)}</strong> in gross rental income over 10 years — often exceeding the ADU build cost.
+</div>
+Want the full solar + rental ROI breakdown? Try our <a href="roi-calculator.html" style="color: var(--green-mid);">ROI Calculator →</a>`
+      }
+    },
+    sustainability: {
+      keywords: ["sustainable", "sustainability", "green", "eco", "environment", "carbon", "electric", "solar", "net zero", "energy", "hcd"],
+      response: () => `
+<strong>Bay Modular's Sustainability Promise</strong><br><br>
+Bay Modular builds some of the most environmentally responsible ADUs in California:<br><br>
+<ul>
+  <li>✅ <strong>100% All-Electric:</strong> No gas lines, no combustion — fully heat-pump powered</li>
+  <li>✅ <strong>HCD-Certified:</strong> Meets California's strictest factory-built housing standards</li>
+  <li>✅ <strong>Solar-Ready Roofs:</strong> Every model ships with a reinforced solar-ready roof deck</li>
+  <li>✅ <strong>Title-24 Compliant:</strong> Exceeds California's energy efficiency requirements</li>
+  <li>✅ <strong>Recycled Steel Frame:</strong> Repurposed shipping container structure reduces landfill steel waste</li>
+  <li>✅ <strong>Spray Foam Insulation:</strong> Superior air sealing, minimal HVAC energy demand</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">🌱 Net-Zero Ready</div>
+  Pair your Solo with a 4–6 kW rooftop solar array and a home battery and you're looking at a net-zero ADU that can generate more electricity than it consumes annually.
+</div>`
+    },
+    models: {
+      keywords: ["solo 2", "solo 3", "solo 4", "model", "compare", "difference", "size", "layout", "floor plan", "square", "sq ft"],
+      response: () => `
+<strong>Comparing the Solo Model Line-Up</strong><br><br>
+All Solo models are HCD-certified, all-electric, and delivered turnkey — including foundation, utilities hookup, and interior finish.<br><br>
+<ul>
+  <li><strong>Solo 2 — 320 sq ft:</strong> Studio or 1BR layout. Ideal for single occupant, office/studio use, or premium short-term rental. Starts ~$145K.</li>
+  <li><strong>Solo 3 — 480 sq ft:</strong> 1BR or 1BR+den layout. The most popular model — perfect for long-term tenants or multi-gen living. Starts ~$185K.</li>
+  <li><strong>Solo 4 — 640 sq ft:</strong> Full 2BR layout. Maximum rental income potential. Best for families or high-rent submarkets. Starts ~$235K.</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">📐 Which is right for you?</div>
+  The Solo 3 offers the best balance of cost, rental income, and lot footprint for most Bay Area properties. But if you're in a premium submarket (SF, Palo Alto, Berkeley), the Solo 4's rental premium often pays back the difference in under 3 years.
+</div>
+Want to see how they'd look in your backyard? Try the <a href="solo_adu_3d_configurator.html" style="color: var(--green-mid);">3D Visual Configurator →</a>`
+    },
+    solar: {
+      keywords: ["solar", "panel", "energy", "electricity", "utility", "bill", "pgande", "pg&e", "saving", "kilowatt"],
+      response: () => `
+<strong>Solar Savings with Bay Modular</strong><br><br>
+Every Solo ships with a solar-ready roof deck. Adding a solar array is straightforward and pays back fast in California:<br><br>
+<ul>
+  <li><strong>Recommended system:</strong> 4–6 kW rooftop array (~$12,000–$18,000 installed)</li>
+  <li><strong>Federal ITC (2025):</strong> 30% tax credit = $3,600–$5,400 back</li>
+  <li><strong>Net metering:</strong> Sell excess power back to PG&amp;E at retail rates</li>
+  <li><strong>Annual savings:</strong> $1,800–$2,800/year depending on usage and city</li>
+  <li><strong>Payback period:</strong> 5–7 years, then free electricity</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">☀️ 25-Year Picture</div>
+  A $15K solar system (after ITC) saves an estimated <strong>$45,000–$65,000</strong> in electricity costs over the panel's 25-year warranty period — all while reducing your carbon footprint.
+</div>`
+    },
+    city: {
+      keywords: ["oakland", "san jose", "fremont", "berkeley", "san francisco", "palo alto", "hayward", "concord", "richmond", "city", "area"],
+      response: (city) => {
+        if (!city) return `I can give you city-specific information on zoning, permitting timelines, and rental income for any Bay Area city we serve. Which city is your property in? (Oakland, San Jose, Fremont, Berkeley, San Francisco, Palo Alto, Hayward, Concord, or Richmond)`;
+        const cityInfo = {
+          Oakland: { adu: "ADU-friendly", permits: "8–12 weeks", zones: "R-1 through R-50", note: "Oakland has one of the most streamlined ADU processes in the Bay Area." },
+          "San Jose": { adu: "Very ADU-friendly", permits: "10–14 weeks", zones: "R-1 through R-M", note: "San Jose's ADU portal has simplified submissions significantly since 2022." },
+          Fremont: { adu: "ADU-friendly", permits: "10–16 weeks", zones: "RS, RM zones", note: "Fremont requires pre-application meetings for ADUs over 500 sq ft." },
+          Berkeley: { adu: "ADU-friendly (strict design review)", permits: "12–18 weeks", zones: "R-1 through R-4", note: "Berkeley has design standards that can add review time — plan ahead." },
+          "San Francisco": { adu: "Complex but permitted", permits: "18–24 weeks", zones: "RH-1 through RM zones", note: "SF has the longest permitting but some of the highest rental income in the country." },
+          "Palo Alto": { adu: "ADU-friendly", permits: "12–16 weeks", zones: "R-1 through R-M", note: "Palo Alto has strict design guidelines but premium rental rates justify it." },
+          Hayward: { adu: "Very ADU-friendly", permits: "8–12 weeks", zones: "RS, RM zones", note: "Hayward's over-the-counter ADU approval for qualifying projects is fast." },
+          Concord: { adu: "ADU-friendly", permits: "10–14 weeks", zones: "R-1 through R-4", note: "Concord has a streamlined ADU checklist review for standard lot configurations." },
+          Richmond: { adu: "ADU-friendly", permits: "10–16 weeks", zones: "RS, RM zones", note: "Richmond is prioritizing ADU development as a housing solution." }
+        };
+        const info = cityInfo[city] || { adu: "ADU-permitted", permits: "10–16 weeks", zones: "Residential zones", note: "Contact us for city-specific details." };
+        return `
+<strong>ADUs in ${city}</strong><br><br>
+<ul>
+  <li><strong>ADU Policy:</strong> ${info.adu}</li>
+  <li><strong>Permit Timeline:</strong> ${info.permits}</li>
+  <li><strong>Applicable Zones:</strong> ${info.zones}</li>
+</ul>
+<div class="highlight-box">
+  <div class="hb-label">💡 ${city} Insight</div>
+  ${info.note}
+</div>
+Want rental income projections or an eligibility check for your ${city} property?`
+      }
+    },
+    fallback: [
+      (q) => `Thanks for asking about <em>"${q}"</em>. I specialize in Bay Area ADUs — let me connect you with what I know best. Could you clarify if you're asking about <strong>pricing</strong>, <strong>eligibility</strong>, <strong>permitting</strong>, <strong>rental income</strong>, or <strong>sustainability</strong>? Or try asking in a slightly different way and I'll do my best to help!`,
+      (q) => `Great question. I'm focused on Bay Modular ADUs and Bay Area real estate, so I may not have a precise answer for <em>"${q}"</em> — but I can help with zoning, Solo model specs, permitting timelines, rental income, and sustainability. What aspect matters most to you?`
+    ]
+  };
+
+  // ─────────────────────── HELPERS ───────────────────────
+  function estimateTenYear(rentStr) {
+    const monthly = parseInt(rentStr.replace(/[$,]/g, ''));
+    let total = 0;
+    let current = monthly;
+    for (let i = 0; i < 10; i++) { total += current * 12; current *= 1.03; }
+    return '$' + Math.round(total / 1000) * 1000 + '+';
+  }
+
+  function detectCity(text) {
+    const cities = ["Oakland", "San Jose", "Fremont", "Berkeley", "San Francisco", "Palo Alto", "Hayward", "Concord", "Richmond"];
+    const lower = text.toLowerCase();
+    return cities.find(c => lower.includes(c.toLowerCase())) || null;
+  }
+
+  function matchKB(text) {
+    const lower = text.toLowerCase();
+    const city = detectCity(text);
+    if (KB.models.keywords.some(k => lower.includes(k))) return KB.models.response();
+    if (KB.cost.keywords.some(k => lower.includes(k))) return KB.cost.response(city);
+    if (KB.solar.keywords.some(k => lower.includes(k))) return KB.solar.response();
+    if (KB.sustainability.keywords.some(k => lower.includes(k))) return KB.sustainability.response();
+    if (KB.rental.keywords.some(k => lower.includes(k))) return KB.rental.response(city);
+    if (KB.permitting.keywords.some(k => lower.includes(k))) return KB.permitting.response(city);
+    if (KB.eligibility.keywords.some(k => lower.includes(k))) return KB.eligibility.response();
+    if (KB.city.keywords.some(k => lower.includes(k))) return KB.city.response(city);
+    return null;
+  }
+
+  // ─────────────────────── STATE ───────────────────────
+  let msgCount = 0;
+  let isTyping = false;
+  let leadShown = false;
+
+  function getTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function appendMessage(role, html, showTime = true) {
+    const container = document.getElementById('chatMessages');
+    const isBot = role === 'bot';
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    div.innerHTML = `
+      <div class="msg-avatar">${isBot ? '🏠' : 'You'}</div>
+      <div>
+        <div class="msg-bubble">${html}</div>
+        ${showTime ? `<div class="msg-time">${getTime()} · ${isBot ? 'ADU Advisor AI' : 'You'}</div>` : ''}
+      </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.id = 'typingIndicator';
+    div.innerHTML = `
+      <div class="msg-avatar">🏠</div>
+      <div class="msg-bubble" style="padding: 0.5rem 1rem;">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typingIndicator');
+    if (t) t.remove();
+  }
+
+  function showLeadCapture() {
+    if (leadShown) return;
+    leadShown = true;
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.innerHTML = `
+      <div class="msg-avatar">🏠</div>
+      <div>
+        <div class="msg-bubble">
+          <strong>Ready to take the next step?</strong><br><br>
+          Looks like you're seriously exploring ADUs — great choice. Enter your email and I'll send you a personalized report with zoning info, model recommendations, and ROI projections for your area.
+          <div class="lead-card">
+            <h4>Get Your Free ADU Report</h4>
+            <p>Personalized to your city, property size, and goals — delivered to your inbox.</p>
+            <div class="lead-form">
+              <input type="email" id="leadEmail" placeholder="your@email.com" />
+              <button onclick="submitLead()">Send Report</button>
+            </div>
+          </div>
+        </div>
+        <div class="msg-time">${getTime()} · ADU Advisor AI</div>
+      </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function submitLead() {
+    const email = document.getElementById('leadEmail').value;
+    if (!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
+    const btn = document.querySelector('.lead-form button');
+    btn.textContent = '✓ Sent!';
+    btn.style.background = '#0F6E56';
+    btn.disabled = true;
+    setTimeout(() => {
+      appendMessage('bot', `Perfect — your personalized ADU report is on its way to <strong>${email}</strong>! 🎉<br><br>In the meantime, check out our <a href="bay_modular_feasibility_tool.html" style="color: var(--green-mid);">AI Feasibility Tool</a> for an instant eligibility check, or explore the <a href="roi-calculator.html" style="color: var(--green-mid);">ROI Calculator</a> for detailed financial projections.`);
+    }, 800);
+  }
+
+  async function processMessage(text) {
+    isTyping = true;
+    document.getElementById('sendBtn').disabled = true;
+    showTyping();
+
+    await new Promise(r => setTimeout(r, 900 + Math.random() * 700));
+    removeTyping();
+    isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
+
+    const response = matchKB(text);
+    if (response) {
+      appendMessage('bot', response);
+    } else {
+      const fb = KB.fallback[Math.floor(Math.random() * KB.fallback.length)];
+      appendMessage('bot', fb(text));
+    }
+
+    msgCount++;
+    if (msgCount === 3 && !leadShown) showLeadCapture();
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || isTyping) return;
+
+    appendMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+    processMessage(text);
+  }
+
+  function sendQuickPrompt(prompt) {
+    if (isTyping) return;
+    appendMessage('user', prompt);
+    processMessage(prompt);
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bay Modular × AI — A Growth Partnership</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-deeper: #085041;
+    --green-light: #E1F5EE;
+    --green-mid: #5DCAA5;
+    --cream: #F8F5EF;
+    --ink: #1A1A18;
+    --ink-mid: #3D3D39;
+    --ink-soft: #6B6B65;
+    --border: rgba(26,26,24,0.1);
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 3rem;
+    background: rgba(248,245,239,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: var(--serif); font-size: 1.1rem; color: var(--ink); }
+  .nav-logo span { color: var(--green); }
+  .nav-links { display: flex; gap: 2.5rem; }
+  .nav-links a { font-size: 0.85rem; font-weight: 400; color: var(--ink-soft); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--green); }
+  .nav-cta {
+    background: var(--green); color: #fff; border: none;
+    padding: 0.6rem 1.4rem; border-radius: 2px;
+    font-family: var(--sans); font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; text-decoration: none; letter-spacing: 0.02em;
+    transition: background 0.2s;
+  }
+  .nav-cta:hover { background: var(--green-dark); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 80px;
+  }
+  .hero-left {
+    padding: 7rem 4rem 5rem 5rem;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.75rem; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--green);
+    margin-bottom: 1.5rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: block; width: 24px; height: 1px; background: var(--green);
+  }
+  .hero-title {
+    font-family: var(--serif); font-size: clamp(2.8rem, 4.5vw, 4.2rem);
+    line-height: 1.1; color: var(--ink);
+    margin-bottom: 1.75rem;
+    letter-spacing: -0.02em;
+  }
+  .hero-title em { color: var(--green); font-style: italic; }
+  .hero-body {
+    font-size: 1.05rem; color: var(--ink-mid);
+    line-height: 1.75; max-width: 480px;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+  }
+  .hero-actions { display: flex; gap: 1rem; align-items: center; }
+  .btn-primary {
+    background: var(--ink); color: var(--cream);
+    padding: 0.9rem 2rem; border-radius: 2px;
+    font-size: 0.9rem; font-weight: 500; letter-spacing: 0.03em;
+    text-decoration: none; transition: all 0.2s;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--green); }
+  .btn-secondary {
+    color: var(--ink); font-size: 0.9rem; font-weight: 400;
+    text-decoration: none; border-bottom: 1px solid var(--border);
+    padding-bottom: 2px; transition: all 0.2s;
+  }
+  .btn-secondary:hover { color: var(--green); border-color: var(--green); }
+  .hero-right {
+    background: var(--green-deeper);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hero-visual {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    padding: 3rem;
+    width: 100%;
+  }
+  .hero-stat-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 1.5rem 2rem;
+    color: #fff;
+    backdrop-filter: blur(4px);
+  }
+  .hero-stat-card .stat-val { font-family: var(--serif); font-size: 2.8rem; color: var(--green-mid); line-height: 1; }
+  .hero-stat-card .stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 0.4rem; letter-spacing: 0.04em; }
+  .hero-stat-card .stat-trend { font-size: 0.75rem; color: var(--green-mid); margin-top: 0.2rem; }
+  .hero-grid-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .hero-bg-pattern {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 70% 50%, rgba(29,158,117,0.15) 0%, transparent 60%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px);
+  }
+
+  /* SECTIONS */
+  section { padding: 7rem 5rem; }
+  .section-eyebrow {
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--green);
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .section-eyebrow::before { content: ''; display: block; width: 20px; height: 1px; background: var(--green); }
+  .section-title {
+    font-family: var(--serif); font-size: clamp(2rem, 3.5vw, 3rem);
+    line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 1.25rem;
+  }
+  .section-body { font-size: 1rem; color: var(--ink-mid); max-width: 560px; line-height: 1.8; font-weight: 300; }
+
+  /* PROBLEM SECTION */
+  .problem-section { background: var(--ink); color: var(--cream); }
+  .problem-section .section-title { color: var(--cream); }
+  .problem-section .section-body { color: rgba(248,245,239,0.7); }
+  .problem-section .section-eyebrow { color: var(--green-mid); }
+  .problem-section .section-eyebrow::before { background: var(--green-mid); }
+  .problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 4rem; background: rgba(255,255,255,0.08); }
+  .problem-card {
+    background: var(--ink);
+    padding: 2.5rem 2rem;
+    position: relative;
+  }
+  .problem-card .p-num {
+    font-family: var(--serif); font-size: 3.5rem; color: rgba(255,255,255,0.06);
+    position: absolute; top: 1.5rem; right: 1.5rem;
+    line-height: 1;
+  }
+  .problem-card .p-icon {
+    width: 44px; height: 44px; border-radius: 2px;
+    background: rgba(29,158,117,0.15); display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.25rem; font-size: 1.3rem;
+  }
+  .problem-card h3 { font-family: var(--serif); font-size: 1.25rem; color: var(--cream); margin-bottom: 0.75rem; }
+  .problem-card p { font-size: 0.9rem; color: rgba(248,245,239,0.6); line-height: 1.75; font-weight: 300; }
+  .problem-card .p-tag {
+    margin-top: 1.25rem;
+    display: inline-block; font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--green-mid); border: 1px solid rgba(93,202,165,0.3);
+    padding: 0.25rem 0.65rem; border-radius: 2px;
+  }
+
+  /* SOLUTIONS */
+  .solutions-section { background: var(--cream); }
+  .solutions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 3.5rem; }
+  .solution-card {
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 2rem; background: #fff;
+    position: relative; overflow: hidden;
+    transition: all 0.3s;
+  }
+  .solution-card:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(29,158,117,0.08); }
+  .solution-card.featured { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; background: var(--green-light); border-color: var(--green); }
+  .solution-card .s-num {
+    font-family: var(--serif); font-size: 0.85rem; color: var(--green);
+    margin-bottom: 1rem; font-weight: 400;
+  }
+  .solution-card h3 { font-family: var(--serif); font-size: 1.4rem; margin-bottom: 0.75rem; }
+  .solution-card p { font-size: 0.9rem; color: var(--ink-mid); line-height: 1.75; font-weight: 300; }
+  .solution-card .s-impact {
+    margin-top: 1.5rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .solution-card .s-impact-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.82rem; color: var(--ink-soft);
+  }
+  .solution-card .s-impact-item::before { content: '↗'; color: var(--green); font-weight: 500; }
+  .solution-card .s-badge {
+    position: absolute; top: 1.5rem; right: 1.5rem;
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.3rem 0.7rem; border-radius: 2px;
+  }
+  .badge-highest { background: var(--green); color: #fff; }
+  .badge-high { background: var(--ink); color: var(--cream); }
+  .badge-medium { background: rgba(26,26,24,0.08); color: var(--ink-mid); }
+  .solution-card .s-demo-link {
+    margin-top: 1.5rem; display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.85rem; font-weight: 500; color: var(--green);
+    text-decoration: none; border-bottom: 1px solid var(--green-light); padding-bottom: 1px;
+    transition: all 0.2s;
+  }
+  .solution-card .s-demo-link:hover { border-color: var(--green); }
+  .solution-card .s-demo-link::after { content: '→'; }
+
+  /* MARKET */
+  .market-section { background: var(--green-light); }
+  .market-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 3.5rem; }
+  .market-card {
+    padding: 2rem 1.5rem;
+    border: 1px solid rgba(29,158,117,0.2);
+    border-radius: 4px; background: #fff;
+  }
+  .market-card .m-val { font-family: var(--serif); font-size: 2.2rem; color: var(--green-deeper); line-height: 1; margin-bottom: 0.5rem; }
+  .market-card .m-label { font-size: 0.85rem; color: var(--ink-mid); line-height: 1.5; font-weight: 300; }
+  .market-card .m-source { font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.5rem; }
+
+  /* ROADMAP */
+  .roadmap-section { background: #fff; }
+  .roadmap-timeline { margin-top: 4rem; position: relative; }
+  .roadmap-timeline::before {
+    content: ''; position: absolute;
+    left: 0; top: 0; bottom: 0; width: 1px;
+    background: var(--border);
+  }
+  .roadmap-item { display: grid; grid-template-columns: 180px 1fr; gap: 3rem; margin-bottom: 3.5rem; position: relative; }
+  .roadmap-item::before {
+    content: ''; position: absolute;
+    left: -4px; top: 6px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--green);
+  }
+  .roadmap-phase { padding-left: 1.5rem; }
+  .roadmap-phase .phase-label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+  .roadmap-phase .phase-time { font-family: var(--serif); font-size: 1rem; color: var(--ink); margin-top: 0.25rem; }
+  .roadmap-content h3 { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 0.5rem; }
+  .roadmap-content p { font-size: 0.9rem; color: var(--ink-mid); line-height: 1.7; font-weight: 300; }
+  .roadmap-content .deliverables { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+  .deliverable-tag {
+    font-size: 0.75rem; padding: 0.3rem 0.75rem;
+    border: 1px solid var(--border); border-radius: 2px;
+    color: var(--ink-mid);
+  }
+
+  /* PITCH */
+  .pitch-section { background: var(--ink); color: var(--cream); }
+  .pitch-section .section-title { color: var(--cream); }
+  .pitch-section .section-body { color: rgba(248,245,239,0.7); max-width: 700px; }
+  .pitch-section .section-eyebrow { color: var(--green-mid); }
+  .pitch-section .section-eyebrow::before { background: var(--green-mid); }
+  .pitch-quote {
+    margin-top: 3rem;
+    border-left: 2px solid var(--green);
+    padding-left: 2rem;
+    max-width: 680px;
+  }
+  .pitch-quote p { font-family: var(--serif); font-size: 1.4rem; color: var(--cream); line-height: 1.6; font-style: italic; }
+  .pitch-quote .q-attr { font-size: 0.8rem; color: rgba(248,245,239,0.5); margin-top: 1rem; font-style: normal; letter-spacing: 0.06em; }
+  .cta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 4rem; }
+  .cta-card {
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+    padding: 2rem; background: rgba(255,255,255,0.04);
+  }
+  .cta-card h3 { font-family: var(--serif); font-size: 1.2rem; color: var(--cream); margin-bottom: 0.5rem; }
+  .cta-card p { font-size: 0.85rem; color: rgba(248,245,239,0.6); line-height: 1.7; margin-bottom: 1.5rem; font-weight: 300; }
+  .cta-card a {
+    display: inline-block; font-size: 0.85rem; font-weight: 500;
+    color: var(--green-mid); text-decoration: none;
+    border-bottom: 1px solid rgba(93,202,165,0.3);
+    padding-bottom: 2px; transition: all 0.2s;
+  }
+  .cta-card a:hover { color: var(--green-mid); border-color: var(--green-mid); }
+
+  /* FOOTER */
+  footer {
+    background: var(--cream); padding: 2.5rem 5rem;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  footer .f-brand { font-family: var(--serif); font-size: 0.95rem; }
+  footer .f-brand span { color: var(--green); }
+  footer .f-note { font-size: 0.78rem; color: var(--ink-soft); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp 0.7s ease both; }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.22s; }
+  .delay-3 { animation-delay: 0.34s; }
+  .delay-4 { animation-delay: 0.48s; }
+
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { min-height: 340px; }
+    .hero-left { padding: 5rem 2rem 3rem; }
+    section { padding: 4rem 1.5rem; }
+    .problem-grid, .solutions-grid, .market-grid, .cta-grid { grid-template-columns: 1fr; }
+    .solution-card.featured { grid-column: span 1; grid-template-columns: 1fr; }
+    .roadmap-item { grid-template-columns: 1fr; gap: 0.75rem; }
+    footer { flex-direction: column; gap: 1rem; padding: 2rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Bay Modular <span>× Jugaad AI</span></div>
+  <div class="nav-links">
+    <a href="#problems">The Gap</a>
+    <a href="#solutions">Solutions</a>
+    <a href="#market">Market</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#demos">Live Demos</a>
+  </div>
+  <a href="mailto:iamvazu@gmail.com" class="nav-cta">Book a Call</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow fade-up">Prepared exclusively for Bay Modular</div>
+    <h1 class="hero-title fade-up delay-1">
+      The Bay Area's best ADU builder deserves <em>AI that closes.</em>
+    </h1>
+    <p class="hero-body fade-up delay-2">
+      You've built a genuinely superior product — HCD-certified, all-electric, turnkey. But today, when a homeowner asks ChatGPT or Perplexity "what's the most sustainable ADU in Oakland?" — you're not in the answer. We're here to change that.
+    </p>
+    <div class="hero-actions fade-up delay-3">
+      <a href="#demos" class="btn-primary">See Live Demos</a>
+      <a href="#solutions" class="btn-secondary">View the Strategy</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-bg-pattern"></div>
+    <div class="hero-visual fade-up delay-2">
+      <div class="hero-stat-card">
+        <div class="stat-val">2,761</div>
+        <div class="stat-label">Bay Area ADUs built in 2023 alone</div>
+        <div class="stat-trend">↑ More than doubled from 2020</div>
+      </div>
+      <div class="hero-grid-cards">
+        <div class="hero-stat-card">
+          <div class="stat-val">32%</div>
+          <div class="stat-label">CA's share of all US ADU permits</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-val">$3.5K</div>
+          <div class="stat-label">Monthly Bay Area ADU rental income</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-val">+10%</div>
+          <div class="stat-label">Projected ADU market growth 2025</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-val">20%</div>
+          <div class="stat-label">CA home sales now include an ADU</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem-section" id="problems">
+  <div class="section-eyebrow">The Gap</div>
+  <h2 class="section-title">Three invisible leaks<br>costing you leads every day</h2>
+  <p class="section-body">Your product wins on quality. Your process loses on speed. Here's exactly where leads are slipping through.</p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="p-num">01</div>
+      <div class="p-icon">🔍</div>
+      <h3>Invisible in AI Search</h3>
+      <p>When Bay Area homeowners ask ChatGPT, Perplexity, or Google AI about sustainable ADUs, your competitors appear. You don't. Your guide content is 5+ years old and not structured for generative search.</p>
+      <div class="p-tag">GEO · AEO Gap</div>
+    </div>
+    <div class="problem-card">
+      <div class="p-num">02</div>
+      <div class="p-icon">⏱</div>
+      <h3>Manual Feasibility Bottleneck</h3>
+      <p>Every lead submits a form and waits for a human to pull Google Earth and title reports. In 2026, high-intent buyers won't wait hours. Your conversion window is 60 seconds — not 24 hours.</p>
+      <div class="p-tag">Funnel Conversion Gap</div>
+    </div>
+    <div class="problem-card">
+      <div class="p-num">03</div>
+      <div class="p-icon">🏗</div>
+      <h3>No Visual Selling Tool</h3>
+      <p>Customers can't picture a shipping container ADU in their backyard. The #1 sales objection is imagination. Competitors with 3D configurators are closing while your team is still emailing PDFs.</p>
+      <div class="p-tag">Sales Conversion Gap</div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTIONS -->
+<section class="solutions-section" id="solutions">
+  <div class="section-eyebrow">AI Solutions</div>
+  <h2 class="section-title">Seven AI tools ranked by<br>revenue impact</h2>
+  <p class="section-body">We've mapped every gap in your customer journey to a specific AI solution. Here's the priority stack.</p>
+
+  <div class="solutions-grid">
+    <div class="solution-card featured">
+      <div>
+        <div class="s-num">Priority 01</div>
+        <h3>Instant AI Feasibility Tool</h3>
+        <p>Replace your manual Google Earth review with an AI-powered property assessment. A homeowner enters their address — the tool pulls parcel data, zoning ordinances, lot dimensions, and access constraints, then returns an instant ADU Feasibility Score with recommended Solo models in 60 seconds. No more form-submit-and-wait.</p>
+        <a href="bay_modular_feasibility_tool.html" class="s-demo-link">See Live Demo</a>
+      </div>
+      <div>
+        <div class="s-impact">
+          <div class="s-impact-item">Replaces hours of PM time per lead with 60-second automation</div>
+          <div class="s-impact-item">Captures email at moment of peak intent</div>
+          <div class="s-impact-item">Estimated 2–3× improvement in top-of-funnel conversion</div>
+          <div class="s-impact-item">Works 24/7 without a project manager</div>
+        </div>
+      </div>
+      <div class="s-badge badge-highest">Highest Impact</div>
+    </div>
+
+    <div class="solution-card">
+      <div class="s-badge badge-highest">Highest Impact</div>
+      <div class="s-num">Priority 02</div>
+      <h3>3D Visual Configurator</h3>
+      <p>An interactive backyard visualizer where customers place and configure Solo modules, choose finishes, and see live pricing. Eliminates the #1 sales objection: "I can't picture it."</p>
+      <div class="s-impact">
+        <div class="s-impact-item">Cuts design consultation time by 40%+</div>
+        <div class="s-impact-item">Customers arrive pre-configured and pre-sold</div>
+      </div>
+      <a href="solo_adu_3d_configurator.html" class="s-demo-link">See Live Demo</a>
+    </div>
+
+    <div class="solution-card">
+      <div class="s-badge badge-high">High Impact</div>
+      <div class="s-num">Priority 03</div>
+      <h3>Solar + Rental ROI Calculator</h3>
+      <p>A dual AI calculator showing personalized 10-year solar savings and monthly rental income projections by city and model. Makes the financial case visceral and personal — buyers sell themselves.</p>
+      <div class="s-impact">
+        <div class="s-impact-item">Converts consideration → decision stage</div>
+        <div class="s-impact-item">Targets Bay Area homeowners' #1 buying driver</div>
+      </div>
+      <a href="roi-calculator.html" class="s-demo-link">See Live Demo</a>
+    </div>
+
+    <div class="solution-card">
+      <div class="s-badge badge-high">High Impact</div>
+      <div class="s-num">Priority 04</div>
+      <h3>GEO + AEO Content Refresh</h3>
+      <p>Restructure all City ADU Guides with schema markup, FAQ JSON-LD, and answer blocks optimized for ChatGPT, Perplexity, and Google AI Overviews. Add programmatic city × model landing pages.</p>
+      <div class="s-impact">
+        <div class="s-impact-item">Bay Modular appears in AI-generated answers</div>
+        <div class="s-impact-item">Compounding organic value, zero ad spend</div>
+      </div>
+    </div>
+
+    <div class="solution-card">
+      <div class="s-badge badge-high">High Impact</div>
+      <div class="s-num">Priority 05</div>
+      <h3>AI Website Chat Advisor</h3>
+      <p>A trained AI agent positioned as "Your ADU Advisor" — answers policy questions, qualifies leads by address/timeline/budget, and books consultations. Captures leads at 11pm that currently bounce.</p>
+      <div class="s-impact">
+        <div class="s-impact-item">Eliminates after-hours lead drop-off</div>
+        <div class="s-impact-item">Pre-qualifies leads before PM involvement</div>
+      </div>
+    </div>
+
+    <div class="solution-card">
+      <div class="s-badge badge-medium">Ops Impact</div>
+      <div class="s-num">Priority 06</div>
+      <h3>AI Project Management Layer</h3>
+      <p>Internal AI tooling: tracks each ADU from feasibility to move-in, flags permitting delays by city, surfaces contractor scheduling conflicts, auto-generates client status updates.</p>
+      <div class="s-impact">
+        <div class="s-impact-item">Reduces PM overhead per project</div>
+        <div class="s-impact-item">Improves the on-time, on-budget promise</div>
+      </div>
+    </div>
+
+    <div class="solution-card featured">
+      <div>
+        <div class="s-num">Priority 07 — PSEO</div>
+        <h3>Programmatic SEO: City-Specific ADU Landing Pages</h3>
+        <p>Build out highly specific, AI-generated landing pages for every Bay Area city Bay Modular serves — targeting "Sustainable Container ADUs in [City Name]" and related long-tail queries. Each page features city-specific zoning info, permit timelines, realistic rental income ranges, and tailored Solo model recommendations. Hundreds of pages that rank for hyper-local searches, compounding organic traffic month over month.</p>
+        <a href="#" class="s-demo-link">View PSEO Strategy</a>
+      </div>
+      <div>
+        <div class="s-impact">
+          <div class="s-impact-item">Targets 50+ Bay Area cities with dedicated landing pages</div>
+          <div class="s-impact-item">Captures long-tail searches like "container ADU Fremont" or "backyard unit Oakland"</div>
+          <div class="s-impact-item">Compounding organic traffic — zero ongoing ad spend</div>
+          <div class="s-impact-item">Each page pre-qualifies visitors with city-specific data and pricing</div>
+          <div class="s-impact-item">Feeds directly into AI Feasibility Tool for seamless conversion</div>
+        </div>
+      </div>
+      <div class="s-badge badge-high">SEO Growth</div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section class="market-section" id="market">
+  <div class="section-eyebrow">Market Context</div>
+  <h2 class="section-title">The tailwind is<br>extraordinary</h2>
+  <p class="section-body">The ADU market is one of the fastest-growing residential categories in the US. Bay Modular is positioned at the exact intersection of demand, regulation, and consumer readiness.</p>
+  <div class="market-grid">
+    <div class="market-card">
+      <div class="m-val">26,900+</div>
+      <div class="m-label">California ADU permits in 2023 — up 200%+ in 3 years</div>
+      <div class="m-source">Source: California HCD</div>
+    </div>
+    <div class="market-card">
+      <div class="m-val">32%</div>
+      <div class="m-label">California's share of all US ADU permits, the clear national leader</div>
+      <div class="m-source">Source: Shovels.ai</div>
+    </div>
+    <div class="market-card">
+      <div class="m-val">1 in 5</div>
+      <div class="m-label">California home permits is now an ADU — up from 1 in 7 in 2022</div>
+      <div class="m-source">Source: CA ADU West Coast</div>
+    </div>
+    <div class="market-card">
+      <div class="m-val">+10%</div>
+      <div class="m-label">Minimum projected ADU growth in California in 2025</div>
+      <div class="m-source">Source: SFBay ADU</div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="roadmap-section" id="roadmap">
+  <div class="section-eyebrow">Execution Plan</div>
+  <h2 class="section-title">90 days to a fully<br>AI-powered sales engine</h2>
+  <p class="section-body">A phased approach that lands quick wins fast, builds infrastructure second, and scales third. No 12-month strategy docs — real tools, real results.</p>
+
+  <div class="roadmap-timeline">
+    <div class="roadmap-item">
+      <div class="roadmap-phase">
+        <div class="phase-label">Phase 1</div>
+        <div class="phase-time">Weeks 1–4</div>
+      </div>
+      <div class="roadmap-content">
+        <h3>Quick Wins — Visible Results Fast</h3>
+        <p>Deploy the Solar + Rental ROI Calculator on the website immediately. Refresh two high-traffic City ADU Guides (Oakland + San Jose) with full GEO/AEO optimization and schema markup. Set up basic AI chat capture for after-hours leads.</p>
+        <div class="deliverables">
+          <div class="deliverable-tag">ROI Calculator live</div>
+          <div class="deliverable-tag">2 guides refreshed</div>
+          <div class="deliverable-tag">AI chat deployed</div>
+          <div class="deliverable-tag">AI search presence begins</div>
+        </div>
+      </div>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase">
+        <div class="phase-label">Phase 2</div>
+        <div class="phase-time">Weeks 5–12</div>
+      </div>
+      <div class="roadmap-content">
+        <h3>Core Engine — Feasibility + All Guides</h3>
+        <p>Launch the AI Feasibility Tool replacing the manual Step 1 process. Refresh all remaining City ADU Guides. Build programmatic landing pages for every Bay Area city × Solo model combination. Integrate feasibility data into CRM.</p>
+        <div class="deliverables">
+          <div class="deliverable-tag">AI Feasibility Tool live</div>
+          <div class="deliverable-tag">All 8 city guides refreshed</div>
+          <div class="deliverable-tag">40+ landing pages</div>
+          <div class="deliverable-tag">CRM integration</div>
+        </div>
+      </div>
+    </div>
+    <div class="roadmap-item">
+      <div class="roadmap-phase">
+        <div class="phase-label">Phase 3</div>
+        <div class="phase-time">Weeks 13–24</div>
+      </div>
+      <div class="roadmap-content">
+        <h3>Scale — Configurator + Operations AI</h3>
+        <p>Launch the 3D Visual Configurator, enabling customers to visualize their backyard setup and arrive at consultations pre-configured. Implement AI project management layer for internal teams. Begin expansion to LA and other CA markets.</p>
+        <div class="deliverables">
+          <div class="deliverable-tag">3D Configurator live</div>
+          <div class="deliverable-tag">PM intelligence layer</div>
+          <div class="deliverable-tag">LA market expansion content</div>
+          <div class="deliverable-tag">Full AI sales funnel</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMOS CTA -->
+<section class="pitch-section" id="demos">
+  <div class="section-eyebrow">Live Demos</div>
+  <h2 class="section-title">We built four tools.<br>Today. For you.</h2>
+  <p class="section-body">Not mockups. Not wireframes. Fully functional AI tools built specifically to show what Bay Modular's sales funnel could look like — starting this week.</p>
+  <div class="pitch-quote">
+    <p>"You've built the best product in the Bay Area ADU market. Let's build the best sales engine to match it."</p>
+    <div class="q-attr">— Our commitment to Bay Modular</div>
+  </div>
+  <div class="cta-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="cta-card">
+      <h3>AI Feasibility Tool</h3>
+      <p>Enter any Bay Area address and get an instant ADU Feasibility Score with recommended Solo models — in 60 seconds. This replaces your current manual Google Earth process entirely.</p>
+      <a href="bay_modular_feasibility_tool.html">Open the Feasibility Tool →</a>
+    </div>
+    <div class="cta-card">
+      <h3>3D Visual Configurator</h3>
+      <p>Drag, drop, and configure Solo modules in a real backyard layout. Choose finishes, see live pricing, and generate a shareable configuration link — exactly what your customers need.</p>
+      <a href="solo_adu_3d_configurator.html">Open the Configurator →</a>
+    </div>
+    <div class="cta-card">
+      <h3>Solar + Rental ROI Calculator</h3>
+      <p>See personalized 10-year projections for rental income, solar savings, and property value uplift — by city, model, and rental type. Makes the financial case visceral and personal.</p>
+      <a href="roi-calculator.html">Open the ROI Calculator →</a>
+    </div>
+    <div class="cta-card" style="border-color: rgba(93,202,165,0.3); background: rgba(93,202,165,0.04);">
+      <h3>AI Website Chat Advisor</h3>
+      <p>A trained AI agent acting as "Your ADU Advisor" — answers zoning questions, compares Solo models, estimates rental income by city, and qualifies leads 24/7 without a project manager.</p>
+      <a href="ai_chat_advisor.html">Open the Chat Advisor →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="f-brand">Bay Modular <span>× Jugaad AI Partnership</span></div>
+  <div class="f-note">Developed with care by Vasu Ranganathan. Built to close. Reach me at <a href="mailto:iamvazu@gmail.com" style="color: var(--green); text-decoration: none;">iamvazu@gmail.com</a> &amp; <a href="tel:4086576116" style="color: var(--green); text-decoration: none;">408 657 6116</a></div>
+</footer>
+
+</body>
+</html>

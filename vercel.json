@@ -1,0 +1,37 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/feasibility-tool",
+      "dest": "/bay_modular_feasibility_tool.html"
+    },
+    {
+      "src": "/configurator",
+      "dest": "/solo_adu_3d_configurator.html"
+    },
+    {
+      "src": "/roi-calculator",
+      "dest": "/roi-calculator.html"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    }
+  ]
+}
