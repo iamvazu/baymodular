@@ -199,19 +199,28 @@ canvas{max-width:100%;max-height:100%;}
 
 <script>
 const MDLS={
-  mini:{name:'Solo 2 Mini',price:165000,sqft:256,spec:'Studio',w:16,d:20, floorPlan:'solo+2+adu+floor+plan+r5.webp'},
-  s2:  {name:'Solo 2',     price:182400,sqft:320,spec:'Studio',w:16,d:24, floorPlan:'solo+2+adu+floor+plan+r5.webp'},
-  s3:  {name:'Solo 3',     price:273600,sqft:480,spec:'1 bed/1 bath',w:24,d:24, floorPlan:'solo+3+adu+floor+plan+r4.webp'},
-  s4:  {name:'Solo 4',     price:367800,sqft:640,spec:'2 bed/1 bath',w:32,d:24, floorPlan:'solo+4+adu+floor+plan+r4.webp'}
+  mini:{name:'Solo 2 Mini',price:165000,sqft:256,spec:'Studio',w:16,d:20, floorPlan:'solo+2+adu+floor+plan+r5.webp', photo:'BM-SOLO2.webp'},
+  s2:  {name:'Solo 2',     price:182400,sqft:320,spec:'Studio',w:16,d:24, floorPlan:'solo+2+adu+floor+plan+r5.webp', photo:'BM-SOLO2.webp'},
+  s3:  {name:'Solo 3',     price:273600,sqft:480,spec:'1 bed/1 bath',w:24,d:24, floorPlan:'solo+3+adu+floor+plan+r4.webp', photo:'BM-SOLO3.webp'},
+  s4:  {name:'Solo 4',     price:367800,sqft:640,spec:'2 bed/1 bath',w:32,d:24, floorPlan:'solo+4+adu+floor+plan+r4.webp', photo:'BM-SOLO4.webp'}
 };
 
-// Pre-load floor plan images into a cache for instant canvas drawing
+// Pre-load floor plan images
 const FP_CACHE={};
 Object.values(MDLS).forEach(m=>{
   if(FP_CACHE[m.floorPlan]) return;
   const img=new Image(); img.src=m.floorPlan;
   img.onload=()=>{ FP_CACHE[m.floorPlan]=img; drawTop(); };
   FP_CACHE[m.floorPlan]=img;
+});
+
+// Pre-load product photos
+const PHOTO_CACHE={};
+Object.values(MDLS).forEach(m=>{
+  if(PHOTO_CACHE[m.photo]) return;
+  const img=new Image(); img.src=m.photo;
+  img.onload=()=>{ PHOTO_CACHE[m.photo]=img; if(S&&S.view==='front') drawFront(); };
+  PHOTO_CACHE[m.photo]=img;
 });
 const S={
   mdl:'s2', body:'#5A6B5A', txt:'#fff', trim:'#E8E4DC', deck:'#6B4E2A',
@@ -501,7 +510,7 @@ function drawIso(){
   ctx.fillText('N\u2192',10,H-10);
 }
 
-// ---------- FRONT ELEVATION ----------
+// ---------- FRONT ELEVATION (Real Photo) ----------
 function drawFront(){
   const cv=document.getElementById('cv');
   const vw=document.getElementById('cview');
@@ -510,248 +519,82 @@ function drawFront(){
   const W=cv.width, H=cv.height;
   ctx.clearRect(0,0,W,H);
   const m=MDLS[S.mdl];
-  const fw=m.w, fh=9.5;
 
-  // Scale: fit container body to ~70% canvas width, ~45% canvas height
-  const ppf=Math.min((W*0.70)/fw, (H*0.52)/fh);
-  const bw=fw*ppf;          // body width in px
-  const bh=fh*ppf;          // body height in px
-  const deckH=ppf*3.2;      // deck height
-  const parapetH=ppf*0.9;   // flat roof parapet strip
-  const overhang=ppf*1.0;   // roof overhang each side
+  // Warm off-white background
+  ctx.fillStyle='#F5F2ED'; ctx.fillRect(0,0,W,H);
 
-  // Anchor: bottom of deck sits at gy
-  const gy=H*0.76;
-  const bx=(W-bw)/2;        // body left x
-  const by=gy-deckH-bh;     // body top y
+  // Subtle vignette gradient
+  const vig=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.9);
+  vig.addColorStop(0,'rgba(0,0,0,0)');
+  vig.addColorStop(1,'rgba(0,0,0,0.08)');
+  ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
 
-  // ── 1. SKY ──
-  const skyGrad=ctx.createLinearGradient(0,0,0,gy);
-  skyGrad.addColorStop(0,'#B8D8EE');
-  skyGrad.addColorStop(0.7,'#D8EEF6');
-  skyGrad.addColorStop(1,'#EEF6FA');
-  ctx.fillStyle=skyGrad; ctx.fillRect(0,0,W,gy);
+  const photo=PHOTO_CACHE[m.photo];
+  const PAD=28; // padding from canvas edge
+  const badgeH=56; // space for bottom badge
 
-  // ── 2. BACKGROUND: fence + hedges ──
-  // wooden fence panels behind ADU
-  const fenceY=by+bh*0.15;
-  ctx.fillStyle='#C8A878';
-  for(let fx=0;fx<W;fx+=18){
-    ctx.fillRect(fx,fenceY,15,gy-fenceY);
-    ctx.fillStyle='#B89858'; ctx.fillRect(fx,fenceY,2,gy-fenceY); ctx.fillStyle='#C8A878';
-  }
-  ctx.fillStyle='rgba(200,168,120,0.6)'; ctx.fillRect(0,fenceY-3,W,4);
-  // hedge/bush strip over fence
-  ctx.fillStyle='#7A9E58';
-  ctx.beginPath(); ctx.ellipse(bx-60,gy-2,55,28,0,0,Math.PI); ctx.fill();
-  ctx.fillStyle='#6A8E48';
-  ctx.beginPath(); ctx.ellipse(bx-55,gy-2,40,22,0,0,Math.PI); ctx.fill();
-  ctx.fillStyle='#7A9E58';
-  ctx.beginPath(); ctx.ellipse(bx+bw+60,gy-2,55,28,0,0,Math.PI); ctx.fill();
-  ctx.fillStyle='#6A8E48';
-  ctx.beginPath(); ctx.ellipse(bx+bw+55,gy-2,40,22,0,0,Math.PI); ctx.fill();
+  if(photo && photo.complete && photo.naturalWidth>0){
+    // Fit photo to canvas (object-fit: contain)
+    const maxW=W-PAD*2, maxH=H-PAD*2-badgeH;
+    const ratio=photo.naturalWidth/photo.naturalHeight;
+    let pw,ph;
+    if(ratio>maxW/maxH){ pw=maxW; ph=maxW/ratio; }
+    else{ ph=maxH; pw=maxH*ratio; }
+    const px=(W-pw)/2, py=(H-badgeH-ph)/2;
 
-  // ── 3. GROUND: poured concrete pavers ──
-  const gndGrad=ctx.createLinearGradient(0,gy,0,H);
-  gndGrad.addColorStop(0,'#D0CCBE'); gndGrad.addColorStop(1,'#B8B4A8');
-  ctx.fillStyle=gndGrad; ctx.fillRect(0,gy,W,H-gy);
-  // paver grid
-  ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=0.8;
-  for(let py=gy+14;py<H;py+=18){ ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(W,py); ctx.stroke(); }
-  for(let px=0;px<W;px+=36){ ctx.beginPath(); ctx.moveTo(px,gy); ctx.lineTo(px,H); ctx.stroke(); }
+    // Soft drop shadow behind photo
+    ctx.shadowColor='rgba(0,0,0,0.18)';
+    ctx.shadowBlur=24;
+    ctx.shadowOffsetX=0;
+    ctx.shadowOffsetY=6;
+    // thin white mat border
+    ctx.fillStyle='#fff';
+    ctx.fillRect(px-6, py-6, pw+12, ph+12);
+    ctx.shadowColor='transparent'; ctx.shadowBlur=0;
 
-  // ── 4. CONTAINER SHADOW ──
-  ctx.fillStyle='rgba(0,0,0,0.1)';
-  ctx.fillRect(bx+6, by+6, bw, bh+deckH);
+    // Draw actual photo
+    ctx.drawImage(photo, px, py, pw, ph);
 
-  // ── 5. DECK ──
-  // deck base
-  const dkGrad=ctx.createLinearGradient(0,gy-deckH,0,gy);
-  dkGrad.addColorStop(0,shade(S.deck,12)); dkGrad.addColorStop(1,shade(S.deck,-10));
-  ctx.fillStyle=dkGrad; ctx.fillRect(bx-ppf*0.5, gy-deckH, bw+ppf, deckH);
-  // deck boards
-  ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1;
-  const boardW=ppf*0.45;
-  for(let bbd=bx-ppf*0.5; bbd<bx+bw+ppf*0.5; bbd+=boardW+1){
-    ctx.beginPath(); ctx.moveTo(bbd,gy-deckH); ctx.lineTo(bbd,gy); ctx.stroke();
-  }
-  // deck edge cap
-  ctx.fillStyle=shade(S.deck,-20);
-  ctx.fillRect(bx-ppf*0.5, gy-5, bw+ppf, 5);
-  // deck fascia
-  ctx.fillStyle=shade(S.deck,-30);
-  ctx.fillRect(bx-ppf*0.5, gy-deckH, bw+ppf, 4);
-
-  // ── 6. CONTAINER BODY ──
-  // body fill
-  const bodyGrad=ctx.createLinearGradient(bx,0,bx+bw,0);
-  bodyGrad.addColorStop(0,shade(S.body,-12));
-  bodyGrad.addColorStop(0.08,S.body);
-  bodyGrad.addColorStop(0.92,S.body);
-  bodyGrad.addColorStop(1,shade(S.body,-18));
-  ctx.fillStyle=bodyGrad;
-  ctx.fillRect(bx, by, bw, bh);
-
-  // corrugated steel ribs (vertical)
-  const ribSpacing=ppf*0.55;
-  for(let rx=bx; rx<bx+bw; rx+=ribSpacing){
-    const rg=ctx.createLinearGradient(rx,0,rx+ribSpacing*0.5,0);
-    rg.addColorStop(0,'rgba(255,255,255,0.07)');
-    rg.addColorStop(0.5,'rgba(255,255,255,0.0)');
-    rg.addColorStop(1,'rgba(0,0,0,0.06)');
-    ctx.fillStyle=rg;
-    ctx.fillRect(rx, by, ribSpacing, bh);
-  }
-
-  // ── 7. PARAPET (flat roof strip) ──
-  const parapetY=by-parapetH;
-  const parapetGrad=ctx.createLinearGradient(0,parapetY,0,by);
-  parapetGrad.addColorStop(0,shade(S.body,18));
-  parapetGrad.addColorStop(1,shade(S.body,5));
-  ctx.fillStyle=parapetGrad;
-  ctx.fillRect(bx-overhang, parapetY, bw+overhang*2, parapetH);
-  // parapet top edge highlight
-  ctx.fillStyle='rgba(255,255,255,0.25)';
-  ctx.fillRect(bx-overhang, parapetY, bw+overhang*2, 2);
-  // parapet shadow underside
-  ctx.fillStyle='rgba(0,0,0,0.15)';
-  ctx.fillRect(bx-overhang, by-1, bw+overhang*2, 3);
-
-  // ── 8. SOLAR PANELS ──
-  if(S.ups.solar){
-    const solarY=parapetY+4;
-    const solarH=parapetH-6;
-    const panelW=ppf*2.2, panelGap=ppf*0.4;
-    const nPanels=Math.floor((bw*0.84)/(panelW+panelGap));
-    const totalW=nPanels*(panelW+panelGap)-panelGap;
-    const startX=bx+(bw-totalW)/2;
-    for(let i=0;i<nPanels;i++){
-      const px=startX+i*(panelW+panelGap);
-      // panel body
-      const pg=ctx.createLinearGradient(px,solarY,px+panelW,solarY+solarH);
-      pg.addColorStop(0,'#3366CC'); pg.addColorStop(1,'#1A3B8A');
-      ctx.fillStyle=pg;
-      ctx.fillRect(px, solarY, panelW, solarH);
-      // panel grid lines
-      ctx.strokeStyle='rgba(100,160,255,0.3)'; ctx.lineWidth=0.5;
-      ctx.beginPath(); ctx.moveTo(px+panelW/2,solarY); ctx.lineTo(px+panelW/2,solarY+solarH); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.08)';
-      ctx.fillRect(px,solarY,panelW,solarH*0.45);
-      // panel border
-      ctx.strokeStyle='#2255AA'; ctx.lineWidth=0.8;
-      ctx.strokeRect(px, solarY, panelW, solarH);
+    // If solar is toggled: overlay a subtle 'Solar Ready' badge on photo top-right
+    if(S.ups.solar){
+      ctx.fillStyle='rgba(30,80,200,0.82)';
+      const badW=90, badHh=22;
+      ctx.beginPath();
+      ctx.roundRect(px+pw-badW-8, py+8, badW, badHh, 4);
+      ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='600 10px DM Sans,sans-serif'; ctx.textAlign='center';
+      ctx.fillText('\u2600 Solar Ready', px+pw-badW/2-8, py+8+badHh*0.68);
     }
+
+    // Bottom info badge
+    const bY=py+ph+14;
+    ctx.fillStyle='rgba(26,26,24,0.06)';
+    ctx.fillRect(px, bY, pw, 34);
+    // name
+    ctx.fillStyle='rgba(15,15,15,0.80)';
+    ctx.font='700 14px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(m.name, px+12, bY+22);
+    // spec
+    ctx.fillStyle='rgba(15,15,15,0.45)';
+    ctx.font='500 12px DM Sans,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(`${m.sqft} sqft  \u00B7  ${m.spec}  \u00B7  ${m.w}' wide`, px+pw/2, bY+22);
+    // model scale note
+    ctx.fillStyle='rgba(15,15,15,0.35)';
+    ctx.font='500 11px DM Sans,sans-serif'; ctx.textAlign='right';
+    ctx.fillText('Actual Model Photo', px+pw-12, bY+22);
+
+  } else {
+    // Loading spinner text while image loads
+    ctx.fillStyle='rgba(26,26,24,0.3)';
+    ctx.font='500 14px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Loading photo...', W/2, H/2);
   }
 
-  // ── 9. WINDOWS ──
-  const winH=ppf*3.4, winY=by+ppf*1.4;
-  const doorW=ppf*2.2, doorH=ppf*7.2;
-  const doorX=bx+bw/2-doorW/2;
-  // left window bank
-  const lwW=ppf*5.5, lwX=bx+ppf*1.2;
-  ctx.fillStyle='rgba(160,210,235,0.82)';
-  ctx.fillRect(lwX, winY, lwW, winH);
-  // window reflection
-  ctx.fillStyle='rgba(255,255,255,0.18)';
-  ctx.fillRect(lwX+3, winY+4, lwW*0.3, winH-8);
-  // window panes (2 panes)
-  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
-  ctx.strokeRect(lwX, winY, lwW, winH);
-  ctx.beginPath(); ctx.moveTo(lwX+lwW/2, winY); ctx.lineTo(lwX+lwW/2, winY+winH); ctx.stroke();
-  // horizontal rail at 60%
-  ctx.beginPath(); ctx.moveTo(lwX, winY+winH*0.6); ctx.lineTo(lwX+lwW, winY+winH*0.6); ctx.stroke();
-  // right window bank (only if wide enough)
-  const rwX=doorX+doorW+ppf*1.2;
-  const rwW=bx+bw-ppf*1.2-rwX;
-  if(rwW>ppf*2){
-    ctx.fillStyle='rgba(160,210,235,0.82)';
-    ctx.fillRect(rwX, winY, rwW, winH);
-    ctx.fillStyle='rgba(255,255,255,0.18)';
-    ctx.fillRect(rwX+3, winY+4, rwW*0.3, winH-8);
-    ctx.strokeStyle=S.trim; ctx.lineWidth=2;
-    ctx.strokeRect(rwX, winY, rwW, winH);
-    if(rwW>ppf*3){
-      ctx.beginPath(); ctx.moveTo(rwX+rwW/2,winY); ctx.lineTo(rwX+rwW/2,winY+winH); ctx.stroke();
-    }
-    ctx.beginPath(); ctx.moveTo(rwX,winY+winH*0.6); ctx.lineTo(rwX+rwW,winY+winH*0.6); ctx.stroke();
-  }
-
-  // ── 10. DOOR ──
-  ctx.fillStyle='rgba(30,30,28,0.88)';
-  ctx.fillRect(doorX, by+bh-doorH, doorW, doorH);
-  // door glass panel
-  ctx.fillStyle='rgba(160,210,235,0.45)';
-  ctx.fillRect(doorX+doorW*0.1, by+bh-doorH+doorH*0.08, doorW*0.8, doorH*0.55);
-  ctx.fillStyle='rgba(255,255,255,0.12)';
-  ctx.fillRect(doorX+doorW*0.1, by+bh-doorH+doorH*0.08, doorW*0.25, doorH*0.55);
-  // door frame
-  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
-  ctx.strokeRect(doorX, by+bh-doorH, doorW, doorH);
-  // door handle
-  ctx.fillStyle='rgba(200,180,120,0.95)';
-  ctx.fillRect(doorX+doorW*0.78, by+bh-doorH*0.5, doorW*0.06, doorH*0.15);
-  ctx.beginPath(); ctx.arc(doorX+doorW*0.81, by+bh-doorH*0.5, doorW*0.05, 0, Math.PI*2);
-  ctx.fill();
-
-  // ── 11. TRIM / CORNER POSTS ──
-  ctx.strokeStyle=S.trim; ctx.lineWidth=3;
-  ctx.strokeRect(bx, by, bw, bh);
-  // corner post left
-  ctx.fillStyle=shade(S.trim, -8);
-  ctx.fillRect(bx-2, by, ppf*0.35, bh);
-  // corner post right
-  ctx.fillRect(bx+bw-ppf*0.35+2, by, ppf*0.35, bh);
-
-  // ── 12. POTTED PLANTS ──
-  const plantY=gy-deckH;
-  // left plant
-  ctx.fillStyle='#5A8042'; ctx.beginPath();
-  ctx.ellipse(bx-ppf*1.8, plantY-ppf*1.2, ppf*0.7, ppf*1.1, -0.2, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#4A7032'; ctx.beginPath();
-  ctx.ellipse(bx-ppf*2.1, plantY-ppf*0.8, ppf*0.5, ppf*0.8, 0.3, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#8B6344'; ctx.fillRect(bx-ppf*2.2, plantY-ppf*0.4, ppf*0.9, ppf*0.45);
-  // right plant
-  ctx.fillStyle='#5A8042'; ctx.beginPath();
-  ctx.ellipse(bx+bw+ppf*1.8, plantY-ppf*1.2, ppf*0.7, ppf*1.1, 0.2, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#4A7032'; ctx.beginPath();
-  ctx.ellipse(bx+bw+ppf*2.1, plantY-ppf*0.8, ppf*0.5, ppf*0.8, -0.3, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle='#8B6344'; ctx.fillRect(bx+bw+ppf*1.3, plantY-ppf*0.4, ppf*0.9, ppf*0.45);
-
-  // ── 13. DIMENSION ANNOTATIONS ──
-  const dimCol='rgba(26,26,24,0.45)';
-  ctx.strokeStyle=dimCol; ctx.lineWidth=0.75; ctx.setLineDash([4,3]);
-  // width dim below deck
-  ctx.beginPath(); ctx.moveTo(bx,gy+16); ctx.lineTo(bx+bw,gy+16); ctx.stroke();
-  ctx.setLineDash([]);
-  // end ticks
-  ctx.beginPath(); ctx.moveTo(bx,gy+10); ctx.lineTo(bx,gy+22); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(bx+bw,gy+10); ctx.lineTo(bx+bw,gy+22); ctx.stroke();
-  ctx.fillStyle=dimCol; ctx.font='600 11px DM Sans,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(`${m.w} ft wide`, bx+bw/2, gy+30);
-  // height dim on left
-  ctx.strokeStyle=dimCol; ctx.setLineDash([4,3]);
-  ctx.beginPath(); ctx.moveTo(bx-22, by); ctx.lineTo(bx-22, gy-deckH); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(bx-28,by); ctx.lineTo(bx-16,by); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(bx-28,gy-deckH); ctx.lineTo(bx-16,gy-deckH); ctx.stroke();
-  ctx.save(); ctx.translate(bx-34, by+(gy-deckH-by)/2);
-  ctx.rotate(-Math.PI/2);
-  ctx.fillStyle=dimCol; ctx.font='600 10px DM Sans,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(`${fh} ft`, 0, 0);
-  ctx.restore();
-
-  // ── 14. BADGE LABEL ──
-  ctx.fillStyle='rgba(26,26,24,0.0)';
-  const labelY=parapetY-16;
-  ctx.font='600 12px DM Sans,sans-serif'; ctx.textAlign='center';
-  // subtle label strip
-  ctx.fillStyle='rgba(248,245,239,0.82)';
-  ctx.fillRect(bx, labelY-14, bw, 18);
-  ctx.fillStyle='rgba(26,26,24,0.55)';
-  ctx.fillText(`${m.name}  ·  ${m.sqft} sqft  ·  Front Elevation`, bx+bw/2, labelY);
-  // sun
-  ctx.font='18px serif'; ctx.textAlign='right';
-  ctx.fillText('\u2600\uFE0F', W-12, 24);
+  // Tab label top-center
+  ctx.fillStyle='rgba(26,26,24,0.35)';
+  ctx.font='500 11px DM Sans,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${m.name}  \u00B7  Front View`, W/2, 18);
 }
 
 // ---------- VIEW SWITCH ----------
