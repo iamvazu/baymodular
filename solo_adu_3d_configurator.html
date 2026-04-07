@@ -199,16 +199,27 @@ canvas{max-width:100%;max-height:100%;}
 
 <script>
 const MDLS={
-  mini:{name:'Solo 2 Mini',price:165000,sqft:256,spec:'Studio',w:16,d:20},
-  s2:  {name:'Solo 2',     price:182400,sqft:320,spec:'Studio',w:16,d:24},
-  s3:  {name:'Solo 3',     price:273600,sqft:480,spec:'1 bed/1 bath',w:24,d:24},
-  s4:  {name:'Solo 4',     price:367800,sqft:640,spec:'2 bed/1 bath',w:32,d:24}
+  mini:{name:'Solo 2 Mini',price:165000,sqft:256,spec:'Studio',w:16,d:20, floorPlan:'solo+2+adu+floor+plan+r5.webp'},
+  s2:  {name:'Solo 2',     price:182400,sqft:320,spec:'Studio',w:16,d:24, floorPlan:'solo+2+adu+floor+plan+r5.webp'},
+  s3:  {name:'Solo 3',     price:273600,sqft:480,spec:'1 bed/1 bath',w:24,d:24, floorPlan:'solo+3+adu+floor+plan+r4.webp'},
+  s4:  {name:'Solo 4',     price:367800,sqft:640,spec:'2 bed/1 bath',w:32,d:24, floorPlan:'solo+4+adu+floor+plan+r4.webp'}
 };
+
+// Pre-load floor plan images into a cache for instant canvas drawing
+const FP_CACHE={};
+Object.values(MDLS).forEach(m=>{
+  if(FP_CACHE[m.floorPlan]) return;
+  const img=new Image(); img.src=m.floorPlan;
+  img.onload=()=>{ FP_CACHE[m.floorPlan]=img; drawTop(); };
+  FP_CACHE[m.floorPlan]=img;
+});
 const S={
   mdl:'s2', body:'#5A6B5A', txt:'#fff', trim:'#E8E4DC', deck:'#6B4E2A',
   ups:{solar:12000,appl:5000,deck:3500},
-  rot:false, ax:0, ay:0, sc:0,
-  view:'top', drag:false, dsx:0, dsy:0, oax:0, oay:0
+  angle:0,   // rotation in degrees (0, 45, 90, ...)
+  cx:0, cy:0, // ADU center position on canvas
+  sc:0,
+  view:'top', drag:false, dsx:0, dsy:0, ocx:0, ocy:0
 };
 
 function shade(c,p){
@@ -218,6 +229,14 @@ function shade(c,p){
   const g=Math.min(255,Math.max(0,((n>>8)&255)+a));
   const b=Math.min(255,Math.max(0,(n&255)+a));
   return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+// ---------- HELPERS ----------
+function pointInRotatedRect(px,py,cx,cy,w,h,ang){
+  const cos=Math.cos(-ang), sin=Math.sin(-ang);
+  const dx=px-cx, dy=py-cy;
+  const lx=cos*dx-sin*dy, ly=sin*dx+cos*dy;
+  return Math.abs(lx)<=w/2+6 && Math.abs(ly)<=h/2+6;
 }
 
 // ---------- TOP VIEW ----------
@@ -231,8 +250,11 @@ function initTop(){
   S.lw=lotFW*S.sc; S.lh=lotFH*S.sc;
   S.ox=(W-S.lw)/2; S.oy=(H-S.lh)/2;
   const m=MDLS[S.mdl];
-  const aw=(S.rot?m.d:m.w)*S.sc, ah=(S.rot?m.w:m.d)*S.sc;
-  if(!S.ax){S.ax=S.ox+(S.lw-aw)/2; S.ay=S.oy+S.lh-ah-5*S.sc;}
+  // place ADU center in lower-middle of yard
+  if(!S.cx){
+    S.cx=S.ox+S.lw/2;
+    S.cy=S.oy+S.lh-(m.d*S.sc/2)-6*S.sc;
+  }
   drawTop();
 }
 
@@ -242,7 +264,8 @@ function drawTop(){
   const ctx=cv.getContext('2d');
   const W=cv.width, H=cv.height;
   ctx.clearRect(0,0,W,H);
-  const {ox:ox,oy:oy,lw:lw,lh:lh,sc:sc}=S;
+  const {ox,oy,lw,lh,sc}=S;
+
   // yard bg
   ctx.fillStyle='#C8D9A0'; ctx.strokeStyle='#8BAF5A'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.roundRect(ox,oy,lw,lh,4); ctx.fill(); ctx.stroke();
@@ -261,8 +284,8 @@ function drawTop(){
   // trees
   const tsz=Math.max(14,sc*2);
   ctx.font=`${tsz}px serif`;
-  ctx.fillText('🌳',ox+4*sc, oy+lh-13*sc);
-  ctx.fillText('🌳',ox+lw-7*sc, oy+lh-18*sc);
+  ctx.fillText('\uD83C\uDF33',ox+4*sc, oy+lh-13*sc);
+  ctx.fillText('\uD83C\uDF33',ox+lw-7*sc, oy+lh-18*sc);
   // setback line
   ctx.setLineDash([4,3]); ctx.strokeStyle='rgba(180,0,0,0.22)'; ctx.lineWidth=0.75;
   ctx.beginPath(); ctx.moveTo(ox, oy+lh-4*sc); ctx.lineTo(ox+lw, oy+lh-4*sc); ctx.stroke();
@@ -271,46 +294,91 @@ function drawTop(){
   ctx.fillText('4 ft setback', ox+lw-3, oy+lh-4*sc-3);
   // sun
   ctx.font='15px serif'; ctx.textAlign='right';
-  ctx.fillText('☀️', ox+lw-3, oy+17);
-  // ADU
+  ctx.fillText('\u2600\uFE0F', ox+lw-3, oy+17);
+
+  // ─── ADU (center-based, rotated) ───
   const m=MDLS[S.mdl];
-  const aw=(S.rot?m.d:m.w)*sc, ah=(S.rot?m.w:m.d)*sc;
-  S.ax=Math.max(ox, Math.min(ox+lw-aw, S.ax));
-  S.ay=Math.max(oy+20*sc, Math.min(oy+lh-ah-4*sc, S.ay));
+  const aw=m.w*sc, ah=m.d*sc;
+  const ang=S.angle*Math.PI/180;
+
+  // clamp center to stay inside yard
+  S.cx=Math.max(ox+18, Math.min(ox+lw-18, S.cx));
+  S.cy=Math.max(oy+24*sc, Math.min(oy+lh-6*sc, S.cy));
+
+  ctx.save();
+  ctx.translate(S.cx, S.cy);
+  ctx.rotate(ang);
+
   // shadow
-  ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.fillRect(S.ax+3,S.ay+3,aw,ah);
-  // deck
+  ctx.fillStyle='rgba(0,0,0,0.11)';
+  ctx.fillRect(-aw/2+3, -ah/2+3, aw, ah);
+  // deck (south side)
   ctx.fillStyle=S.deck; ctx.globalAlpha=0.82;
-  ctx.fillRect(S.ax, S.ay+ah, aw, 3.5*sc);
+  ctx.fillRect(-aw/2, ah/2, aw, 3.5*sc);
   ctx.globalAlpha=1;
-  // body
-  ctx.fillStyle=S.body; ctx.fillRect(S.ax,S.ay,aw,ah);
-  // ribs
-  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=0.5;
-  for(let rx=S.ax+5;rx<S.ax+aw;rx+=7){
-    ctx.beginPath(); ctx.moveTo(rx,S.ay); ctx.lineTo(rx,S.ay+ah); ctx.stroke();
+  // body base
+  ctx.fillStyle=S.body;
+  ctx.fillRect(-aw/2, -ah/2, aw, ah);
+
+  // ── Floor Plan image ──
+  const fpImg=FP_CACHE[m.floorPlan];
+  if(fpImg && fpImg.complete && fpImg.naturalWidth>0){
+    const pad=2;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-aw/2+pad, -ah/2+pad, aw-pad*2, ah-pad*2); ctx.clip();
+    const imgAR=fpImg.naturalWidth/fpImg.naturalHeight;
+    const boxAR=aw/ah;
+    let iw,ih,ix,iy;
+    if(imgAR>boxAR){ih=ah-pad*2;iw=ih*imgAR;ix=-(iw/2);iy=-ah/2+pad;}
+    else{iw=aw-pad*2;ih=iw/imgAR;ix=-aw/2+pad;iy=-(ih/2);}
+    ctx.globalAlpha=0.9;
+    ctx.drawImage(fpImg,ix,iy,iw,ih);
+    ctx.globalAlpha=1;
+    ctx.restore();
+  } else {
+    ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=0.5;
+    for(let rx=-aw/2+5; rx<aw/2; rx+=7){
+      ctx.beginPath(); ctx.moveTo(rx,-ah/2); ctx.lineTo(rx,ah/2); ctx.stroke();
+    }
   }
-  // solar on top
+
+  // solar overlay
   if(S.ups.solar){
-    ctx.fillStyle='rgba(34,85,170,0.45)';
-    ctx.fillRect(S.ax+aw*0.12,S.ay+2,aw*0.76,ah*0.42);
+    ctx.fillStyle='rgba(34,85,170,0.28)';
+    ctx.fillRect(-aw/2+aw*0.08, -ah/2+2, aw*0.84, ah*0.28);
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='7px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('\u2600 Solar', 0, -ah/2+ah*0.14+4);
   }
   // trim border
-  ctx.strokeStyle=S.trim; ctx.lineWidth=1.5;
-  ctx.strokeRect(S.ax,S.ay,aw,ah);
-  // label
-  ctx.fillStyle=S.txt;
-  ctx.font=`500 ${Math.max(8,sc*1.3)}px DM Sans,sans-serif`;
+  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
+  ctx.strokeRect(-aw/2, -ah/2, aw, ah);
+  // rotation handle dot (top centre)
+  ctx.fillStyle=S.trim;
+  ctx.beginPath(); ctx.arc(0, -ah/2-8, 5, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
+  ctx.stroke();
+  // name badge at bottom
+  ctx.fillStyle='rgba(26,26,24,0.75)';
+  ctx.fillRect(-aw/2, ah/2-18, aw, 18);
+  ctx.fillStyle='#fff';
+  ctx.font=`600 ${Math.max(7,sc*1.05)}px DM Sans,sans-serif`;
   ctx.textAlign='center';
-  ctx.fillText(m.name, S.ax+aw/2, S.ay+ah/2-3);
-  ctx.font=`${Math.max(7,sc*1.05)}px DM Sans,sans-serif`;
-  ctx.fillText(`${S.rot?m.d:m.w}' × ${S.rot?m.w:m.d}'`, S.ax+aw/2, S.ay+ah/2+9);
-  // dim
+  ctx.fillText(`${m.name}  ${m.w}'\u00D7${m.d}'`, 0, ah/2-5);
+
+  ctx.restore();
+
+  // angle label outside ADU
+  if(S.angle!==0){
+    ctx.fillStyle='rgba(26,26,24,0.4)'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`${S.angle}\u00B0`, S.cx, S.cy-ah/2-16);
+  }
+  // width dim above
   ctx.fillStyle='rgba(26,26,24,0.38)'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(`${S.rot?m.d:m.w} ft`, S.ax+aw/2, S.ay-4);
+  const dimY=S.cy-Math.max(aw,ah)/2-20;
+  ctx.fillText(`${m.w} ft wide`, S.cx, Math.max(oy+10, dimY));
 }
 
-// ---------- ISO VIEW ----------
+// ---------- ISO VIEW (FIXED) ----------
 function drawIso(){
   const cv=document.getElementById('cv');
   const vw=document.getElementById('cview');
@@ -319,66 +387,118 @@ function drawIso(){
   const W=cv.width, H=cv.height;
   ctx.clearRect(0,0,W,H);
   const m=MDLS[S.mdl];
-  const fw=S.rot?m.d:m.w, fd=S.rot?m.w:m.d, fh=9.5;
-  const sx=Math.min(16,W/80), sy=Math.min(7,H/80), sz=Math.min(18,H/24);
-  const iso=(x,y,z)=>({x:W/2+(x-y)*sx, y:H*0.78-z*sz+(x+y)*sy});
-  const face=(pts,fill,str='rgba(0,0,0,0.1)')=>{
-    ctx.fillStyle=fill; ctx.strokeStyle=str; ctx.lineWidth=0.5;
+  const fw=m.w, fd=m.d, fh=9.5;
+
+  // Fitted scales: lot is 62x58 units
+  // x-canvas span = (62+58)*sx => ~W*0.8
+  // y-canvas span = (62+58)*sy => ~H*0.38
+  // height span   = fh*sz     => ~H*0.38
+  const sx=(W*0.80)/(62+58);
+  const sy=(H*0.38)/(62+58);
+  const sz=(H*0.40)/(fh+2);
+  const baseY=H*0.86-(62+58)*sy;
+
+  const iso=(x,y,z)=>({
+    x:W*0.50+(x-y)*sx,
+    y:baseY-z*sz+(x+y)*sy
+  });
+  const face=(pts,fill,str='rgba(0,0,0,0.12)')=>{
+    ctx.fillStyle=fill; ctx.strokeStyle=str; ctx.lineWidth=0.6;
     ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
-    pts.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath(); ctx.fill(); ctx.stroke();
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
   };
-  // ground
-  const gc=[[0,0],[62,0],[62,58],[0,58]].map(([x,y])=>iso(x,y,0));
-  ctx.fillStyle='#C8D9A0'; ctx.beginPath(); ctx.moveTo(gc[0].x,gc[0].y);
-  gc.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath(); ctx.fill();
+
+  // Sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H*0.65);
+  sky.addColorStop(0,'#C2DFF0'); sky.addColorStop(1,'#EAF4F8');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // Yard ground
+  const lot=[[0,0],[62,0],[62,58],[0,58]].map(([x,y])=>iso(x,y,0));
+  ctx.fillStyle='#C8D9A0';
+  ctx.beginPath(); ctx.moveTo(lot[0].x,lot[0].y);
+  lot.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.closePath(); ctx.fill();
   ctx.strokeStyle='#8BAF5A'; ctx.lineWidth=1; ctx.stroke();
-  // house
-  const hc=[[15,2],[43,2],[43,16],[15,16]].map(([x,y])=>iso(x,y,0));
-  ctx.fillStyle='#C0B0A0'; ctx.beginPath(); ctx.moveTo(hc[0].x,hc[0].y);
-  hc.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.closePath(); ctx.fill();
+
+  // Main house (3D block)
+  const hx=14,hy=2,hw=30,hd=15,hh=8;
+  face([iso(hx,hy,0),iso(hx+hw,hy,0),iso(hx+hw,hy,hh),iso(hx,hy,hh)],     shade('#C0B0A0',-8),'rgba(0,0,0,0.1)');
+  face([iso(hx,hy,0),iso(hx,hy+hd,0),iso(hx,hy+hd,hh),iso(hx,hy,hh)],     shade('#C0B0A0',-30),'rgba(0,0,0,0.1)');
+  face([iso(hx+hw,hy,0),iso(hx+hw,hy+hd,0),iso(hx+hw,hy+hd,hh),iso(hx+hw,hy,hh)],shade('#C0B0A0',-16),'rgba(0,0,0,0.1)');
+  face([iso(hx,hy,hh),iso(hx+hw,hy,hh),iso(hx+hw,hy+hd,hh),iso(hx,hy+hd,hh)],    shade('#C0B0A0',20),'rgba(0,0,0,0.08)');
+  // house front windows
+  const nhw=Math.max(1,Math.floor(hw/9));
+  for(let i=0;i<nhw;i++){
+    const wx=hx+2+i*(hw/nhw),ww=hw/nhw-2;
+    face([iso(wx,hy+hd,1.8),iso(wx+ww,hy+hd,1.8),iso(wx+ww,hy+hd,4.8),iso(wx,hy+hd,4.8)],'rgba(180,220,240,0.7)','rgba(120,160,200,0.6)');
+  }
+  const hlp=iso(hx+hw/2,hy+hd/2,hh+1);
+  ctx.fillStyle='rgba(26,26,24,0.38)'; ctx.font=`500 ${Math.max(8,sx*3)}px DM Sans,sans-serif`; ctx.textAlign='center';
+  ctx.fillText('Main House',hlp.x,hlp.y);
+
   // ADU
-  const ax=18, ay=30;
+  const ax=19, ay=31;
   // deck
-  face([[ax,ay+fd],[ax+fw,ay+fd],[ax+fw,ay+fd+4],[ax,ay+fd+4]].map(([x,y])=>iso(x,y,0.25)),S.deck);
-  // back
+  face([[ax,ay+fd],[ax+fw,ay+fd],[ax+fw,ay+fd+3.5],[ax,ay+fd+3.5]].map(([x,y])=>iso(x,y,0.2)),S.deck);
+  // back wall
   face([iso(ax,ay,0),iso(ax+fw,ay,0),iso(ax+fw,ay,fh),iso(ax,ay,fh)],shade(S.body,0));
-  // left
-  face([iso(ax,ay,0),iso(ax,ay+fd,0),iso(ax,ay+fd,fh),iso(ax,ay,fh)],shade(S.body,-28));
-  // right
-  face([iso(ax+fw,ay,0),iso(ax+fw,ay+fd,0),iso(ax+fw,ay+fd,fh),iso(ax+fw,ay,fh)],shade(S.body,-14));
-  // top
-  face([iso(ax,ay,fh),iso(ax+fw,ay,fh),iso(ax+fw,ay+fd,fh),iso(ax,ay+fd,fh)],shade(S.body,20));
-  // solar
+  // left wall
+  face([iso(ax,ay,0),iso(ax,ay+fd,0),iso(ax,ay+fd,fh),iso(ax,ay,fh)],shade(S.body,-32));
+  // right wall
+  face([iso(ax+fw,ay,0),iso(ax+fw,ay+fd,0),iso(ax+fw,ay+fd,fh),iso(ax+fw,ay,fh)],shade(S.body,-16));
+  // front face
+  face([iso(ax,ay+fd,0),iso(ax+fw,ay+fd,0),iso(ax+fw,ay+fd,fh),iso(ax,ay+fd,fh)],shade(S.body,10));
+  // roof
+  face([iso(ax,ay,fh),iso(ax+fw,ay,fh),iso(ax+fw,ay+fd,fh),iso(ax,ay+fd,fh)],shade(S.body,24));
+  // solar panels
   if(S.ups.solar){
-    for(let i=0;i<3;i++){
-      const px=ax+1.5+i*(fw/3-0.3);
-      face([iso(px,ay+1.5,fh+0.12),iso(px+fw/3-0.3,ay+1.5,fh+0.12),
-            iso(px+fw/3-0.3,ay+fd-1.5,fh+0.12),iso(px,ay+fd-1.5,fh+0.12)],'#2255AA','#1144AA');
+    const cols=3,rows=2,pw=(fw-2)/cols,ph=(fd-2)/rows;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const px=ax+1+c*pw,py=ay+1+r*ph;
+      face([iso(px,py,fh+0.15),iso(px+pw-0.25,py,fh+0.15),
+            iso(px+pw-0.25,py+ph-0.15,fh+0.15),iso(px,py+ph-0.15,fh+0.15)],'#2255BB','#1144AA');
     }
   }
-  // windows front
-  const nw=Math.max(1,Math.floor(fw/7.5));
-  for(let i=0;i<nw;i++){
-    const wx=ax+1.5+i*(fw/nw), ww=fw/nw-1.2;
-    face([iso(wx,ay+fd,1.6),iso(wx+ww,ay+fd,1.6),iso(wx+ww,ay+fd,5.4),iso(wx,ay+fd,5.4)],'rgba(180,220,240,0.82)',S.trim);
-  }
-  // door
-  const dx=ax+fw/2-1;
-  face([iso(dx,ay+fd,0),iso(dx+2,ay+fd,0),iso(dx+2,ay+fd,6.8),iso(dx,ay+fd,6.8)],'#3A2A1A',S.trim);
-  // ribs
-  ctx.strokeStyle=S.trim+'28'; ctx.lineWidth=0.4;
-  for(let r=1;r<fd;r+=3){
-    const p1=iso(ax,ay+r,0), p2=iso(ax,ay+r,fh);
+  // container ribs left-face
+  ctx.strokeStyle=S.trim+'30'; ctx.lineWidth=0.4;
+  for(let r=2;r<fd;r+=3){
+    const p1=iso(ax,ay+r,0),p2=iso(ax,ay+r,fh);
     ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
   }
+  // front windows
+  const nw=Math.max(1,Math.floor(fw/7));
+  for(let i=0;i<nw;i++){
+    const wx=ax+1.5+i*(fw/nw),ww=fw/nw-1.4;
+    face([iso(wx,ay+fd,1.8),iso(wx+ww,ay+fd,1.8),
+          iso(wx+ww,ay+fd,5.2),iso(wx,ay+fd,5.2)],'rgba(180,220,240,0.85)',S.trim);
+    const wm1=iso(wx+ww/2,ay+fd,1.8),wm2=iso(wx+ww/2,ay+fd,5.2);
+    ctx.strokeStyle=S.trim; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(wm1.x,wm1.y); ctx.lineTo(wm2.x,wm2.y); ctx.stroke();
+  }
+  // door
+  const dx=ax+fw/2-1.1;
+  face([iso(dx,ay+fd,0),iso(dx+2.2,ay+fd,0),iso(dx+2.2,ay+fd,6.5),iso(dx,ay+fd,6.5)],'#3A2A20',S.trim);
+  // trim edges
+  ctx.strokeStyle=S.trim; ctx.lineWidth=1.2;
+  const fe1=iso(ax,ay+fd,0),fe2=iso(ax+fw,ay+fd,0);
+  ctx.beginPath(); ctx.moveTo(fe1.x,fe1.y); ctx.lineTo(fe2.x,fe2.y); ctx.stroke();
   // trees
-  ctx.font='18px serif';
-  const t1=iso(6,16,0); ctx.fillText('🌳',t1.x,t1.y);
-  const t2=iso(52,20,0); ctx.fillText('🌳',t2.x,t2.y);
-  // label
-  const lp=iso(ax+fw/2,ay+fd/2,fh+1.8);
-  ctx.fillStyle='rgba(26,26,24,0.5)'; ctx.font='500 11px DM Sans,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(`${m.name} · ${m.sqft} sqft · ${m.spec}`,lp.x,lp.y);
+  const tsz=Math.max(14,sx*6);
+  ctx.font=`${tsz}px serif`;
+  const t1=iso(5,50,0); ctx.fillText('\uD83C\uDF33',t1.x-8,t1.y);
+  const t2=iso(55,22,0); ctx.fillText('\uD83C\uDF33',t2.x-8,t2.y);
+  // sun
+  ctx.font='20px serif'; ctx.textAlign='right';
+  ctx.fillText('\u2600\uFE0F',W-10,24);
+  // ADU label
+  const lp=iso(ax+fw/2,ay+fd/2,fh+2);
+  ctx.fillStyle='rgba(26,26,24,0.6)';
+  ctx.font=`600 ${Math.max(9,sx*4)}px DM Sans,sans-serif`; ctx.textAlign='center';
+  ctx.fillText(`${m.name}  \u00B7  ${m.sqft} sqft  \u00B7  ${m.spec}`,lp.x,lp.y);
+  ctx.fillStyle='rgba(26,26,24,0.3)'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('N\u2192',10,H-10);
 }
 
 // ---------- FRONT ELEVATION ----------
@@ -391,69 +511,247 @@ function drawFront(){
   ctx.clearRect(0,0,W,H);
   const m=MDLS[S.mdl];
   const fw=m.w, fh=9.5;
-  const ppf=Math.min((W-80)/(fw+10),(H-80)/(fh+10));
-  const sx=(W-fw*ppf)/2, gy=H-55;
-  // sky
-  ctx.fillStyle='#D4E8F0'; ctx.fillRect(0,0,W,gy);
-  ctx.fillStyle='#C8D9A0'; ctx.fillRect(0,gy,W,H-gy);
-  // trees
-  ctx.font='26px serif';
-  ctx.fillText('🌳',sx-55,gy-2);
-  ctx.fillText('🌳',sx+fw*ppf+28,gy-2);
-  // house backdrop
-  ctx.fillStyle='#C0B0A0';
-  ctx.fillRect(sx-65,gy-(fh+5)*ppf,fw*ppf+130,(fh+5)*ppf);
-  ctx.fillStyle='#9A8070';
-  ctx.beginPath();
-  ctx.moveTo(sx-85,gy-(fh+5)*ppf);
-  ctx.lineTo(sx+fw*ppf/2+65,gy-(fh+11)*ppf);
-  ctx.lineTo(sx+fw*ppf+85,gy-(fh+5)*ppf);
-  ctx.closePath(); ctx.fill();
-  // deck
-  const dh=3.8*ppf;
-  ctx.fillStyle=S.deck; ctx.fillRect(sx-2,gy-dh,fw*ppf+4,dh);
-  // body
-  ctx.fillStyle=S.body;
-  ctx.fillRect(sx,gy-dh-fh*ppf,fw*ppf,fh*ppf);
-  // ribs
-  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=0.75;
-  for(let x=sx+5;x<sx+fw*ppf;x+=10){
-    ctx.beginPath(); ctx.moveTo(x,gy-dh-fh*ppf); ctx.lineTo(x,gy-dh); ctx.stroke();
+
+  // Scale: fit container body to ~70% canvas width, ~45% canvas height
+  const ppf=Math.min((W*0.70)/fw, (H*0.52)/fh);
+  const bw=fw*ppf;          // body width in px
+  const bh=fh*ppf;          // body height in px
+  const deckH=ppf*3.2;      // deck height
+  const parapetH=ppf*0.9;   // flat roof parapet strip
+  const overhang=ppf*1.0;   // roof overhang each side
+
+  // Anchor: bottom of deck sits at gy
+  const gy=H*0.76;
+  const bx=(W-bw)/2;        // body left x
+  const by=gy-deckH-bh;     // body top y
+
+  // ── 1. SKY ──
+  const skyGrad=ctx.createLinearGradient(0,0,0,gy);
+  skyGrad.addColorStop(0,'#B8D8EE');
+  skyGrad.addColorStop(0.7,'#D8EEF6');
+  skyGrad.addColorStop(1,'#EEF6FA');
+  ctx.fillStyle=skyGrad; ctx.fillRect(0,0,W,gy);
+
+  // ── 2. BACKGROUND: fence + hedges ──
+  // wooden fence panels behind ADU
+  const fenceY=by+bh*0.15;
+  ctx.fillStyle='#C8A878';
+  for(let fx=0;fx<W;fx+=18){
+    ctx.fillRect(fx,fenceY,15,gy-fenceY);
+    ctx.fillStyle='#B89858'; ctx.fillRect(fx,fenceY,2,gy-fenceY); ctx.fillStyle='#C8A878';
   }
-  // trim border
-  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
-  ctx.strokeRect(sx,gy-dh-fh*ppf,fw*ppf,fh*ppf);
-  // windows
-  const nw=Math.max(1,Math.floor(fw/8));
-  const ww=(fw*ppf*0.64)/nw, wh=2.8*ppf, wg=(fw*ppf*0.36)/(nw+1);
-  for(let i=0;i<nw;i++){
-    const wx=sx+wg+i*(ww+wg), wy=gy-dh-fh*ppf+1.8*ppf;
-    ctx.fillStyle='rgba(180,220,240,0.85)'; ctx.fillRect(wx,wy,ww,wh);
-    ctx.strokeStyle=S.trim; ctx.lineWidth=1.5; ctx.strokeRect(wx,wy,ww,wh);
-    ctx.beginPath(); ctx.moveTo(wx+ww/2,wy); ctx.lineTo(wx+ww/2,wy+wh); ctx.stroke();
+  ctx.fillStyle='rgba(200,168,120,0.6)'; ctx.fillRect(0,fenceY-3,W,4);
+  // hedge/bush strip over fence
+  ctx.fillStyle='#7A9E58';
+  ctx.beginPath(); ctx.ellipse(bx-60,gy-2,55,28,0,0,Math.PI); ctx.fill();
+  ctx.fillStyle='#6A8E48';
+  ctx.beginPath(); ctx.ellipse(bx-55,gy-2,40,22,0,0,Math.PI); ctx.fill();
+  ctx.fillStyle='#7A9E58';
+  ctx.beginPath(); ctx.ellipse(bx+bw+60,gy-2,55,28,0,0,Math.PI); ctx.fill();
+  ctx.fillStyle='#6A8E48';
+  ctx.beginPath(); ctx.ellipse(bx+bw+55,gy-2,40,22,0,0,Math.PI); ctx.fill();
+
+  // ── 3. GROUND: poured concrete pavers ──
+  const gndGrad=ctx.createLinearGradient(0,gy,0,H);
+  gndGrad.addColorStop(0,'#D0CCBE'); gndGrad.addColorStop(1,'#B8B4A8');
+  ctx.fillStyle=gndGrad; ctx.fillRect(0,gy,W,H-gy);
+  // paver grid
+  ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=0.8;
+  for(let py=gy+14;py<H;py+=18){ ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(W,py); ctx.stroke(); }
+  for(let px=0;px<W;px+=36){ ctx.beginPath(); ctx.moveTo(px,gy); ctx.lineTo(px,H); ctx.stroke(); }
+
+  // ── 4. CONTAINER SHADOW ──
+  ctx.fillStyle='rgba(0,0,0,0.1)';
+  ctx.fillRect(bx+6, by+6, bw, bh+deckH);
+
+  // ── 5. DECK ──
+  // deck base
+  const dkGrad=ctx.createLinearGradient(0,gy-deckH,0,gy);
+  dkGrad.addColorStop(0,shade(S.deck,12)); dkGrad.addColorStop(1,shade(S.deck,-10));
+  ctx.fillStyle=dkGrad; ctx.fillRect(bx-ppf*0.5, gy-deckH, bw+ppf, deckH);
+  // deck boards
+  ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1;
+  const boardW=ppf*0.45;
+  for(let bbd=bx-ppf*0.5; bbd<bx+bw+ppf*0.5; bbd+=boardW+1){
+    ctx.beginPath(); ctx.moveTo(bbd,gy-deckH); ctx.lineTo(bbd,gy); ctx.stroke();
   }
-  // door
-  const dw=1.9*ppf, doh=6.3*ppf;
-  const doorX=sx+(fw*ppf-dw)/2;
-  ctx.fillStyle='#3A2A1A'; ctx.fillRect(doorX,gy-dh-doh,dw,doh);
-  ctx.strokeStyle=S.trim; ctx.lineWidth=1; ctx.strokeRect(doorX,gy-dh-doh,dw,doh);
-  // solar
+  // deck edge cap
+  ctx.fillStyle=shade(S.deck,-20);
+  ctx.fillRect(bx-ppf*0.5, gy-5, bw+ppf, 5);
+  // deck fascia
+  ctx.fillStyle=shade(S.deck,-30);
+  ctx.fillRect(bx-ppf*0.5, gy-deckH, bw+ppf, 4);
+
+  // ── 6. CONTAINER BODY ──
+  // body fill
+  const bodyGrad=ctx.createLinearGradient(bx,0,bx+bw,0);
+  bodyGrad.addColorStop(0,shade(S.body,-12));
+  bodyGrad.addColorStop(0.08,S.body);
+  bodyGrad.addColorStop(0.92,S.body);
+  bodyGrad.addColorStop(1,shade(S.body,-18));
+  ctx.fillStyle=bodyGrad;
+  ctx.fillRect(bx, by, bw, bh);
+
+  // corrugated steel ribs (vertical)
+  const ribSpacing=ppf*0.55;
+  for(let rx=bx; rx<bx+bw; rx+=ribSpacing){
+    const rg=ctx.createLinearGradient(rx,0,rx+ribSpacing*0.5,0);
+    rg.addColorStop(0,'rgba(255,255,255,0.07)');
+    rg.addColorStop(0.5,'rgba(255,255,255,0.0)');
+    rg.addColorStop(1,'rgba(0,0,0,0.06)');
+    ctx.fillStyle=rg;
+    ctx.fillRect(rx, by, ribSpacing, bh);
+  }
+
+  // ── 7. PARAPET (flat roof strip) ──
+  const parapetY=by-parapetH;
+  const parapetGrad=ctx.createLinearGradient(0,parapetY,0,by);
+  parapetGrad.addColorStop(0,shade(S.body,18));
+  parapetGrad.addColorStop(1,shade(S.body,5));
+  ctx.fillStyle=parapetGrad;
+  ctx.fillRect(bx-overhang, parapetY, bw+overhang*2, parapetH);
+  // parapet top edge highlight
+  ctx.fillStyle='rgba(255,255,255,0.25)';
+  ctx.fillRect(bx-overhang, parapetY, bw+overhang*2, 2);
+  // parapet shadow underside
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.fillRect(bx-overhang, by-1, bw+overhang*2, 3);
+
+  // ── 8. SOLAR PANELS ──
   if(S.ups.solar){
-    ctx.fillStyle='#2255AA';
-    ctx.fillRect(sx+8,gy-dh-fh*ppf-13,fw*ppf-16,13);
-    ctx.strokeStyle='#1144AA'; ctx.lineWidth=0.5;
-    for(let px=sx+12;px<sx+fw*ppf-12;px+=22){
-      ctx.beginPath(); ctx.moveTo(px,gy-dh-fh*ppf-13); ctx.lineTo(px,gy-dh-fh*ppf); ctx.stroke();
+    const solarY=parapetY+4;
+    const solarH=parapetH-6;
+    const panelW=ppf*2.2, panelGap=ppf*0.4;
+    const nPanels=Math.floor((bw*0.84)/(panelW+panelGap));
+    const totalW=nPanels*(panelW+panelGap)-panelGap;
+    const startX=bx+(bw-totalW)/2;
+    for(let i=0;i<nPanels;i++){
+      const px=startX+i*(panelW+panelGap);
+      // panel body
+      const pg=ctx.createLinearGradient(px,solarY,px+panelW,solarY+solarH);
+      pg.addColorStop(0,'#3366CC'); pg.addColorStop(1,'#1A3B8A');
+      ctx.fillStyle=pg;
+      ctx.fillRect(px, solarY, panelW, solarH);
+      // panel grid lines
+      ctx.strokeStyle='rgba(100,160,255,0.3)'; ctx.lineWidth=0.5;
+      ctx.beginPath(); ctx.moveTo(px+panelW/2,solarY); ctx.lineTo(px+panelW/2,solarY+solarH); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.08)';
+      ctx.fillRect(px,solarY,panelW,solarH*0.45);
+      // panel border
+      ctx.strokeStyle='#2255AA'; ctx.lineWidth=0.8;
+      ctx.strokeRect(px, solarY, panelW, solarH);
     }
   }
-  // dim line
-  ctx.strokeStyle='rgba(26,26,24,0.22)'; ctx.lineWidth=0.5; ctx.setLineDash([3,3]);
-  ctx.beginPath(); ctx.moveTo(sx,gy+12); ctx.lineTo(sx+fw*ppf,gy+12); ctx.stroke();
+
+  // ── 9. WINDOWS ──
+  const winH=ppf*3.4, winY=by+ppf*1.4;
+  const doorW=ppf*2.2, doorH=ppf*7.2;
+  const doorX=bx+bw/2-doorW/2;
+  // left window bank
+  const lwW=ppf*5.5, lwX=bx+ppf*1.2;
+  ctx.fillStyle='rgba(160,210,235,0.82)';
+  ctx.fillRect(lwX, winY, lwW, winH);
+  // window reflection
+  ctx.fillStyle='rgba(255,255,255,0.18)';
+  ctx.fillRect(lwX+3, winY+4, lwW*0.3, winH-8);
+  // window panes (2 panes)
+  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
+  ctx.strokeRect(lwX, winY, lwW, winH);
+  ctx.beginPath(); ctx.moveTo(lwX+lwW/2, winY); ctx.lineTo(lwX+lwW/2, winY+winH); ctx.stroke();
+  // horizontal rail at 60%
+  ctx.beginPath(); ctx.moveTo(lwX, winY+winH*0.6); ctx.lineTo(lwX+lwW, winY+winH*0.6); ctx.stroke();
+  // right window bank (only if wide enough)
+  const rwX=doorX+doorW+ppf*1.2;
+  const rwW=bx+bw-ppf*1.2-rwX;
+  if(rwW>ppf*2){
+    ctx.fillStyle='rgba(160,210,235,0.82)';
+    ctx.fillRect(rwX, winY, rwW, winH);
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.fillRect(rwX+3, winY+4, rwW*0.3, winH-8);
+    ctx.strokeStyle=S.trim; ctx.lineWidth=2;
+    ctx.strokeRect(rwX, winY, rwW, winH);
+    if(rwW>ppf*3){
+      ctx.beginPath(); ctx.moveTo(rwX+rwW/2,winY); ctx.lineTo(rwX+rwW/2,winY+winH); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(rwX,winY+winH*0.6); ctx.lineTo(rwX+rwW,winY+winH*0.6); ctx.stroke();
+  }
+
+  // ── 10. DOOR ──
+  ctx.fillStyle='rgba(30,30,28,0.88)';
+  ctx.fillRect(doorX, by+bh-doorH, doorW, doorH);
+  // door glass panel
+  ctx.fillStyle='rgba(160,210,235,0.45)';
+  ctx.fillRect(doorX+doorW*0.1, by+bh-doorH+doorH*0.08, doorW*0.8, doorH*0.55);
+  ctx.fillStyle='rgba(255,255,255,0.12)';
+  ctx.fillRect(doorX+doorW*0.1, by+bh-doorH+doorH*0.08, doorW*0.25, doorH*0.55);
+  // door frame
+  ctx.strokeStyle=S.trim; ctx.lineWidth=2;
+  ctx.strokeRect(doorX, by+bh-doorH, doorW, doorH);
+  // door handle
+  ctx.fillStyle='rgba(200,180,120,0.95)';
+  ctx.fillRect(doorX+doorW*0.78, by+bh-doorH*0.5, doorW*0.06, doorH*0.15);
+  ctx.beginPath(); ctx.arc(doorX+doorW*0.81, by+bh-doorH*0.5, doorW*0.05, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── 11. TRIM / CORNER POSTS ──
+  ctx.strokeStyle=S.trim; ctx.lineWidth=3;
+  ctx.strokeRect(bx, by, bw, bh);
+  // corner post left
+  ctx.fillStyle=shade(S.trim, -8);
+  ctx.fillRect(bx-2, by, ppf*0.35, bh);
+  // corner post right
+  ctx.fillRect(bx+bw-ppf*0.35+2, by, ppf*0.35, bh);
+
+  // ── 12. POTTED PLANTS ──
+  const plantY=gy-deckH;
+  // left plant
+  ctx.fillStyle='#5A8042'; ctx.beginPath();
+  ctx.ellipse(bx-ppf*1.8, plantY-ppf*1.2, ppf*0.7, ppf*1.1, -0.2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#4A7032'; ctx.beginPath();
+  ctx.ellipse(bx-ppf*2.1, plantY-ppf*0.8, ppf*0.5, ppf*0.8, 0.3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#8B6344'; ctx.fillRect(bx-ppf*2.2, plantY-ppf*0.4, ppf*0.9, ppf*0.45);
+  // right plant
+  ctx.fillStyle='#5A8042'; ctx.beginPath();
+  ctx.ellipse(bx+bw+ppf*1.8, plantY-ppf*1.2, ppf*0.7, ppf*1.1, 0.2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#4A7032'; ctx.beginPath();
+  ctx.ellipse(bx+bw+ppf*2.1, plantY-ppf*0.8, ppf*0.5, ppf*0.8, -0.3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#8B6344'; ctx.fillRect(bx+bw+ppf*1.3, plantY-ppf*0.4, ppf*0.9, ppf*0.45);
+
+  // ── 13. DIMENSION ANNOTATIONS ──
+  const dimCol='rgba(26,26,24,0.45)';
+  ctx.strokeStyle=dimCol; ctx.lineWidth=0.75; ctx.setLineDash([4,3]);
+  // width dim below deck
+  ctx.beginPath(); ctx.moveTo(bx,gy+16); ctx.lineTo(bx+bw,gy+16); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(26,26,24,0.42)'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(`${m.w} ft wide`,sx+fw*ppf/2,gy+26);
-  ctx.fillStyle='rgba(26,26,24,0.38)'; ctx.font='500 11px DM Sans,sans-serif';
-  ctx.fillText(`${m.name} · Front Elevation`,W/2,18);
+  // end ticks
+  ctx.beginPath(); ctx.moveTo(bx,gy+10); ctx.lineTo(bx,gy+22); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx+bw,gy+10); ctx.lineTo(bx+bw,gy+22); ctx.stroke();
+  ctx.fillStyle=dimCol; ctx.font='600 11px DM Sans,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${m.w} ft wide`, bx+bw/2, gy+30);
+  // height dim on left
+  ctx.strokeStyle=dimCol; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(bx-22, by); ctx.lineTo(bx-22, gy-deckH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(bx-28,by); ctx.lineTo(bx-16,by); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx-28,gy-deckH); ctx.lineTo(bx-16,gy-deckH); ctx.stroke();
+  ctx.save(); ctx.translate(bx-34, by+(gy-deckH-by)/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillStyle=dimCol; ctx.font='600 10px DM Sans,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`${fh} ft`, 0, 0);
+  ctx.restore();
+
+  // ── 14. BADGE LABEL ──
+  ctx.fillStyle='rgba(26,26,24,0.0)';
+  const labelY=parapetY-16;
+  ctx.font='600 12px DM Sans,sans-serif'; ctx.textAlign='center';
+  // subtle label strip
+  ctx.fillStyle='rgba(248,245,239,0.82)';
+  ctx.fillRect(bx, labelY-14, bw, 18);
+  ctx.fillStyle='rgba(26,26,24,0.55)';
+  ctx.fillText(`${m.name}  ·  ${m.sqft} sqft  ·  Front Elevation`, bx+bw/2, labelY);
+  // sun
+  ctx.font='18px serif'; ctx.textAlign='right';
+  ctx.fillText('\u2600\uFE0F', W-12, 24);
 }
 
 // ---------- VIEW SWITCH ----------
@@ -474,17 +772,18 @@ cv.addEventListener('mousedown',e=>{
   const r=cv.getBoundingClientRect();
   const mx=e.clientX-r.left, my=e.clientY-r.top;
   const m=MDLS[S.mdl];
-  const aw=(S.rot?m.d:m.w)*S.sc, ah=(S.rot?m.w:m.d)*S.sc;
-  if(mx>=S.ax&&mx<=S.ax+aw&&my>=S.ay&&my<=S.ay+ah){
-    S.drag=true; S.dsx=mx; S.dsy=my; S.oax=S.ax; S.oay=S.ay;
+  const aw=m.w*S.sc, ah=m.d*S.sc;
+  const ang=S.angle*Math.PI/180;
+  if(pointInRotatedRect(mx,my,S.cx,S.cy,aw,ah,ang)){
+    S.drag=true; S.dsx=mx; S.dsy=my; S.ocx=S.cx; S.ocy=S.cy;
     cv.style.cursor='grabbing';
   }
 });
 document.addEventListener('mousemove',e=>{
   if(!S.drag) return;
   const r=cv.getBoundingClientRect();
-  S.ax=S.oax+(e.clientX-r.left-S.dsx);
-  S.ay=S.oay+(e.clientY-r.top-S.dsy);
+  S.cx=S.ocx+(e.clientX-r.left-S.dsx);
+  S.cy=S.ocy+(e.clientY-r.top-S.dsy);
   drawTop();
 });
 document.addEventListener('mouseup',()=>{S.drag=false; cv.style.cursor='default';});
@@ -492,24 +791,30 @@ cv.addEventListener('touchstart',e=>{
   if(S.view!=='top') return;
   const r=cv.getBoundingClientRect();
   const mx=e.touches[0].clientX-r.left, my=e.touches[0].clientY-r.top;
-  const m=MDLS[S.mdl]; const aw=(S.rot?m.d:m.w)*S.sc, ah=(S.rot?m.w:m.d)*S.sc;
-  if(mx>=S.ax&&mx<=S.ax+aw&&my>=S.ay&&my<=S.ay+ah){
-    S.drag=true; S.dsx=mx; S.dsy=my; S.oax=S.ax; S.oay=S.ay;
+  const m=MDLS[S.mdl]; const aw=m.w*S.sc, ah=m.d*S.sc;
+  const ang=S.angle*Math.PI/180;
+  if(pointInRotatedRect(mx,my,S.cx,S.cy,aw,ah,ang)){
+    S.drag=true; S.dsx=mx; S.dsy=my; S.ocx=S.cx; S.ocy=S.cy;
   }
   e.preventDefault();
 },{passive:false});
 document.addEventListener('touchmove',e=>{
   if(!S.drag||S.view!=='top') return;
   const r=cv.getBoundingClientRect();
-  S.ax=S.oax+(e.touches[0].clientX-r.left-S.dsx);
-  S.ay=S.oay+(e.touches[0].clientY-r.top-S.dsy);
+  S.cx=S.ocx+(e.touches[0].clientX-r.left-S.dsx);
+  S.cy=S.ocy+(e.touches[0].clientY-r.top-S.dsy);
   drawTop(); e.preventDefault();
 },{passive:false});
 document.addEventListener('touchend',()=>{S.drag=false;});
 
 // ---------- CONTROLS ----------
-function doRotate(){S.rot=!S.rot; redraw();}
-function doReset(){S.ax=0;S.ay=0;S.rot=false;initTop();}
+function doRotate(){
+  S.angle=(S.angle+45)%360;
+  const btn=document.querySelector('.cbtn[title="Rotate"]');
+  if(btn) btn.title=`Rotate (${S.angle}\u00B0)`;
+  redraw();
+}
+function doReset(){S.angle=0; S.cx=0; S.cy=0; initTop();}
 function redraw(){
   if(S.view==='top') drawTop();
   else if(S.view==='iso') drawIso();
@@ -518,7 +823,7 @@ function redraw(){
 
 // ---------- MODEL ----------
 function pickModel(id){
-  S.mdl=id; S.ax=0; S.ay=0;
+  S.mdl=id; S.cx=0; S.cy=0;
   document.querySelectorAll('.mopt').forEach(el=>el.classList.remove('on'));
   document.getElementById('om-'+id).classList.add('on');
   document.getElementById('slbl').textContent=MDLS[id].name+' base';
